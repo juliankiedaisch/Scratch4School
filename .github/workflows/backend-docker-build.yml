@@ -24,17 +24,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
-      - name: Extract metadata for backend
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: teacherki/scratch4school-backend
-          tags: |
-            type=semver,pattern={{version}}
-            type=ref,event=branch
-            type=sha,format=short
-            type=raw,value=dev,enable={{is_default_branch}}
+
+      # Extract version from tag or use 'dev' for branch pushes
+      - name: Set Docker tag
+        id: set-tag
+        run: |
+          # Check if this was triggered by a tag
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Extract version number without 'v' prefix
+            TAG="${GITHUB_REF#refs/tags/v}"
+            echo "TAG=$TAG" >> $GITHUB_ENV
+            echo "Using tag from git: $TAG"
+          else
+            # Default to 'dev' for branch pushes
+            echo "TAG=dev" >> $GITHUB_ENV
+            echo "Using default tag: dev"
+          fi
 
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
@@ -42,6 +47,6 @@ jobs:
           context: ./backend  # Backend directory 
           file: ./backend/Dockerfile  # Backend Dockerfile
           push: true
-          tags: teacherki/scratch4school-backend:dev
+          tags: teacherki/scratch4school-backend:${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -2,13 +2,15 @@ version: '3.8'
 
 services:
   frontend:
-    image: teacherki/scratch4school-frontend
+    build:
+      context: .
     ports:
       - "8601:8601"
     restart: unless-stopped
 
   backend:
-    image: teacherki/scratch4school-backend
+    build:
+      context: ./backend
     ports:
       - "5008:5008"
     volumes:

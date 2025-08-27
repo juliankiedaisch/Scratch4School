@@ -9,7 +9,49 @@ PUBLIC_REMOTE="git@github.com:juliankiedaisch/Scratch4School.git"  # GitHub remo
 PUBLIC_BRANCH="main"                  # Branch to push to GitHub
 LAST_SYNC_FILE="$PUBLIC_REPO_DIR/.last_sync_commit"  # File to track last sync point
 
+# Process arguments
+TAG_NAME=""
+SHOW_HELP=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -t|--tag)
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo "Error: Tag name is required after -t/--tag"
+        exit 1
+      fi
+      TAG_NAME="$2"
+      shift 2
+      ;;
+    -h|--help)
+      SHOW_HELP=true
+      shift
+      ;;
+    *)
+      echo "Error: Unknown parameter '$1'"
+      echo "Use -h or --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Show help if requested
+if [ "$SHOW_HELP" = true ]; then
+  echo "Usage: $(basename $0) [options]"
+  echo "Options:"
+  echo "  -t, --tag TAG_NAME    Create a Git tag in the public repository"
+  echo "  -h, --help            Show this help message"
+  echo ""
+  echo "Example:"
+  echo "  $(basename $0) --tag v1.2.0"
+  exit 0
+fi
+
 echo "==== Publishing from $SOURCE_BRANCH to GitHub ===="
+if [ -n "$TAG_NAME" ]; then
+  echo "Will create tag: $TAG_NAME"
+fi
 
 # Check if we have a last sync commit recorded
 FIRST_RUN=false
@@ -124,6 +166,20 @@ else
   PATCH_COUNT=$(ls -1 "$PATCHES_DIR"/*.patch 2>/dev/null | wc -l || echo "0")
   if [ "$PATCH_COUNT" -eq 0 ]; then
     echo "No new commits to publish. Already up to date."
+    
+    # Create tag even if there are no new commits (if requested)
+    if [ -n "$TAG_NAME" ]; then
+      cd "$PUBLIC_REPO_DIR"
+      if git rev-parse "$TAG_NAME" &>/dev/null; then
+        echo "Warning: Tag '$TAG_NAME' already exists. Skipping tag creation."
+      else
+        echo "Creating tag '$TAG_NAME'..."
+        git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+        git push origin "$TAG_NAME"
+        echo "Tag '$TAG_NAME' created and pushed."
+      fi
+    fi
+    
     exit 0
   fi
 
@@ -152,13 +208,34 @@ fi
 echo "$LATEST_COMMIT" > "$LAST_SYNC_FILE"
 echo "Saved latest commit hash for next sync"
 
+# Create tag if requested
+if [ -n "$TAG_NAME" ]; then
+  # Check if tag already exists
+  if git rev-parse "$TAG_NAME" &>/dev/null; then
+    echo "Warning: Tag '$TAG_NAME' already exists. Skipping tag creation."
+  else
+    echo "Creating tag '$TAG_NAME'..."
+    git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+    echo "Tag '$TAG_NAME' created."
+  fi
+fi
+
 # Push to GitHub
 echo "Pushing to GitHub..."
-git push -u origin "$PUBLIC_BRANCH"
+if [ -n "$TAG_NAME" ]; then
+  git push -u origin "$PUBLIC_BRANCH" --tags
+  echo "Pushed branch and tags to GitHub."
+else
+  git push -u origin "$PUBLIC_BRANCH"
+  echo "Pushed branch to GitHub."
+fi
 
 echo "==== Publishing complete! ===="
 if [ "$FIRST_RUN" = true ]; then
   echo "Published initial snapshot from $SOURCE_BRANCH to GitHub"
 else
   echo "Published $PATCH_COUNT new commits from $SOURCE_BRANCH to GitHub"
+fi
+if [ -n "$TAG_NAME" ]; then
+  echo "Created and pushed tag: $TAG_NAME"
 fi
