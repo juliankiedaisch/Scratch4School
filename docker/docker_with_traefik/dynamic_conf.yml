@@ -1,0 +1,9 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /path/to/cert.combine
+        keyFile: /path/to/private.key
+  certificates:
+    - certFile: /path/to/cert.combine
+      keyFile: /path/to/private.key
