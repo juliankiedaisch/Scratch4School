@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime, timezone
 import uuid
+from flask import current_app
 
 # User-Group association table (many-to-many relationship)
 user_groups = db.Table('user_groups',
@@ -56,11 +57,11 @@ class User(db.Model):
         if user_data and 'groups' in user_data:
             role = 'user'  # Default role
             groups = [elem["act"] for elem in user_data.get('groups', {}).values()]
-            if 'admins' in groups:
+            if current_app.config['ROLE_ADMIN'] in groups:
                 role = 'admin'
-            elif 'lehrende' in groups:
+            elif current_app.config['ROLE_TEACHER'] in groups:
                 role = 'teacher'
-            elif 'schuelerinnen' in groups:
+            else:
                 role = 'student'
             user.role = role
         

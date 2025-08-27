@@ -17,6 +17,10 @@ class Config:
     # Frontend URL for redirects after auth
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
 
+    #Rolemanagement
+    ROLE_TEACHER = os.environ.get('ROLE_TEACHER')
+    ROLE_ADMIN = os.environ.get('ROLE_ADMIN')
+
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
