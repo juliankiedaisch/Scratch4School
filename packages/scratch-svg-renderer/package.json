@@ -1,0 +1,80 @@
+{
+  "name": "@scratch/scratch-svg-renderer",
+  "version": "11.6.0",
+  "description": "SVG renderer for Scratch",
+  "main": "./dist/node/scratch-svg-renderer.js",
+  "browser": "./dist/web/scratch-svg-renderer.js",
+  "exports": {
+    "webpack": "./src/index.js",
+    "browser": "./dist/web/scratch-svg-renderer.js",
+    "node": "./dist/node/scratch-svg-renderer.js",
+    "default": "./src/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "npm run clean && webpack",
+    "clean": "rimraf dist playground",
+    "start": "webpack-dev-server",
+    "test": "npm run test:lint && npm run test:unit",
+    "test:lint": "eslint . --ext .js",
+    "test:unit": "tap ./test/*.js",
+    "watch": "webpack --watch"
+  },
+  "author": "Massachusetts Institute of Technology",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/scratchfoundation/scratch-svg-renderer#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scratchfoundation/scratch-editor.git"
+  },
+  "peerDependencies": {
+    "scratch-render-fonts": "^1.0.0"
+  },
+  "tap": {
+    "branches": 70,
+    "functions": 50,
+    "lines": 70,
+    "statements": 70
+  },
+  "dependencies": {
+    "base64-js": "1.5.1",
+    "base64-loader": "1.0.0",
+    "css-tree": "1.1.3",
+    "fastestsmallesttextencoderdecoder": "1.0.22",
+    "isomorphic-dompurify": "2.26.0",
+    "minilog": "3.1.0",
+    "transformation-matrix": "1.15.3"
+  },
+  "devDependencies": {
+    "@babel/core": "7.28.3",
+    "@babel/eslint-parser": "7.28.0",
+    "@babel/preset-env": "7.28.3",
+    "babel-loader": "9.2.1",
+    "copy-webpack-plugin": "6.4.1",
+    "eslint": "8.57.1",
+    "eslint-config-scratch": "9.0.9",
+    "eslint-plugin-import": "2.32.0",
+    "jsdom": "13.2.0",
+    "json": "9.0.6",
+    "mkdirp": "2.1.6",
+    "rimraf": "3.0.2",
+    "scratch-render-fonts": "1.0.226",
+    "scratch-semantic-release-config": "3.0.0",
+    "scratch-webpack-configuration": "3.0.0",
+    "semantic-release": "19.0.5",
+    "tap": "16.3.10",
+    "webpack": "5.101.3",
+    "webpack-cli": "5.1.4",
+    "webpack-dev-server": "5.2.2",
+    "xmldom": "0.1.31"
+  },
+  "browserslist": [
+    "Chrome >= 63",
+    "Edge >= 15",
+    "Firefox >= 57",
+    "Safari >= 11"
+  ]
+}

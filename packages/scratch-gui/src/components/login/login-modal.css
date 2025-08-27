@@ -1,0 +1,47 @@
+.modalContent {
+    padding: 1.5rem;
+    max-width: 400px;
+}
+
+.modalContent h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.modalContent p {
+    margin-bottom: 1.5rem;
+}
+
+.buttonRow {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.okButton {
+    background-color: #4d97ff;
+    color: white;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.okButton:hover {
+    background-color: #4280d7;
+}
+
+.cancelButton {
+    background-color: #f2f2f2;
+    color: #575e75;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.cancelButton:hover {
+    background-color: #e0e0e0;
+}

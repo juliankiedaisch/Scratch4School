@@ -1,0 +1,47 @@
+name: Build and Push Frontend Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+    paths:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  build-frontend:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: teacherki/scratch4school-frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=sha,format=short
+            type=raw,value=dev,enable={{is_default_branch}}
+
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./  # Root directory for frontend
+          file: ./Dockerfile  # Root Dockerfile for frontend
+          push: true
+          tags: teacherki/scratch4school-frontend:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

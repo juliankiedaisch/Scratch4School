@@ -1,0 +1,67 @@
+.statusBar {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    height: 1.5rem;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    border-top: 1px solid #ddd;
+}
+
+.statusItem {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+    white-space: nowrap;
+}
+
+.statusIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+}
+
+.statusDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #888;
+}
+
+/* Status colors */
+.statusPositive .statusDot {
+    background-color: #4CAF50;  /* Green */
+}
+
+.statusNegative .statusDot {
+    background-color: #F44336;  /* Red */
+}
+
+.statusWarning .statusDot {
+    background-color: #FF9800;  /* Orange */
+}
+
+.statusNeutral .statusDot {
+    background-color: #9E9E9E;  /* Grey */
+}
+
+/* Text colors */
+.statusPositive {
+    color: #2E7D32;
+}
+
+.statusNegative {
+    color: #C62828;
+}
+
+.statusWarning {
+    color: #EF6C00;
+}
+
+.statusNeutral {
+    color: #616161;
+}

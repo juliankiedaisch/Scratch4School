@@ -1,0 +1,89 @@
+{
+  "name": "@scratch/scratch-render",
+  "version": "11.6.0",
+  "description": "WebGL Renderer for Scratch 3.0",
+  "author": "Massachusetts Institute of Technology",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/scratchfoundation/scratch-render#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scratchfoundation/scratch-editor.git"
+  },
+  "main": "./dist/node/scratch-render.js",
+  "exports": {
+    "webpack": "./src/index.js",
+    "browser": "./dist/web/scratch-render.js",
+    "node": "./dist/node/scratch-render.js",
+    "default": "./src/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "webpack --progress && npm run docs",
+    "clean": "rimraf dist playground",
+    "docs": "jsdoc -c .jsdoc.json",
+    "lint": "eslint .",
+    "prepublish": "npm run build",
+    "prepublish-watch": "npm run watch",
+    "start": "webpack-dev-server",
+    "tap": "tap test/unit test/integration",
+    "test": "npm run lint && npm run tap",
+    "watch": "webpack --progress --watch --watch-poll"
+  },
+  "tap": {
+    "branches": 10,
+    "functions": 20,
+    "lines": 30,
+    "statements": 30
+  },
+  "browserslist": [
+    "Chrome >= 63",
+    "Edge >= 15",
+    "Firefox >= 57",
+    "Safari >= 8",
+    "Android >= 63",
+    "iOS >= 8"
+  ],
+  "dependencies": {
+    "@scratch/scratch-svg-renderer": "11.6.0",
+    "grapheme-breaker": "0.3.2",
+    "hull.js": "0.2.10",
+    "ify-loader": "1.1.0",
+    "linebreak": "0.3.0",
+    "minilog": "3.1.0",
+    "raw-loader": "0.5.1",
+    "twgl.js": "4.24.0"
+  },
+  "peerDependencies": {
+    "scratch-render-fonts": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.28.3",
+    "@babel/eslint-parser": "7.28.0",
+    "@babel/polyfill": "7.12.1",
+    "@babel/preset-env": "7.28.3",
+    "@scratch/scratch-vm": "11.6.0",
+    "babel-loader": "9.2.1",
+    "copy-webpack-plugin": "6.4.1",
+    "docdash": "0.4.0",
+    "eslint": "8.57.1",
+    "eslint-config-scratch": "9.0.9",
+    "gh-pages": "1.2.0",
+    "html-webpack-plugin": "5.6.4",
+    "jsdoc": "3.6.11",
+    "json": "9.0.6",
+    "playwright-chromium": "1.55.0",
+    "scratch-render-fonts": "1.0.226",
+    "scratch-semantic-release-config": "3.0.0",
+    "scratch-storage": "4.0.217",
+    "scratch-webpack-configuration": "3.0.0",
+    "semantic-release": "19.0.5",
+    "tap": "16.3.10",
+    "terser-webpack-plugin": "5.3.14",
+    "webpack": "5.101.3",
+    "webpack-cli": "5.1.4",
+    "webpack-dev-server": "5.2.2"
+  }
+}

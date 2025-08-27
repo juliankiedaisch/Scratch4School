@@ -1,0 +1,4 @@
+backend/
+*.log
+*.pyc
+__pycache__/

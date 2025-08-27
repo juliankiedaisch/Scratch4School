@@ -1,0 +1,14 @@
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.9rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+p {
+    font-size: 0.8rem;
+    line-height: 1.5em;
+}

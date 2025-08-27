@@ -1,0 +1,180 @@
+@import "../../css/colors.css";
+@import "../../css/units.css";
+
+.playerModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.playerModalContent {
+    width: 95%;
+    height: 95%;
+    max-width: 840px;
+    max-height: 740px;
+    margin: 0 auto;
+    outline: none;
+    border: none;
+    padding: 0;
+    border-radius: 0.5rem;
+    background-color: $ui-white;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.playerModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: $motion-primary;
+    color: white;
+    padding: 0.5rem 1rem;
+    height: 3rem;
+}
+
+.playerTitle {
+    font-size: 1.2rem;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+}
+
+.closeButton {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.closeIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+    filter: brightness(0) invert(1);
+}
+
+.playerContainer {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: hsla(215, 100%, 95%, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stageWrapper {
+    position: relative;
+    width: 720px;
+    height: 540px;
+    background-color: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stageCanvas {
+    display: block;
+    border-radius: 0.5rem;
+    width: 720px;
+    height: 540px;
+}
+
+.playerControls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.greenFlagButton,
+.stopButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: transform 0.1s;
+}
+
+.greenFlagButton:hover,
+.stopButton:hover {
+    transform: scale(1.1);
+    background-color: white;
+}
+
+.greenFlagButton:active,
+.stopButton:active {
+    transform: scale(0.95);
+}
+
+.loadingContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: $ui-white;
+    z-index: 10;
+}
+
+.errorContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: $ui-white;
+    color: $error-primary;
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 2rem;
+}
+
+.spinner {
+    display: inline-block;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    border: 0.25rem solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: $motion-primary;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

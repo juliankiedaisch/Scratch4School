@@ -1,0 +1,9 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Student head, larger and centered -->
+  <circle cx="10" cy="7.5" r="3.2" stroke="white" stroke-width="2" fill="none"/>
+  <!-- Body (shoulders), scaled up -->
+  <path d="M4.5 16c0-3 11-3 11 0" stroke="white" stroke-width="2" fill="none"/>
+  <!-- Graduation cap, scaled and positioned for larger head -->
+  <rect x="7" y="4.4" width="6" height="1.6" stroke="white" stroke-width="1.2" fill="none" transform="rotate(-10 10 5.2)"/>
+  <line x1="10" y1="6.2" x2="10" y2="8" stroke="white" stroke-width="1.2"/>
+</svg>
