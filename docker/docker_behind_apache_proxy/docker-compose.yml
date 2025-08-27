@@ -31,5 +31,7 @@ services:
       # Frontend URL for redirects after auth
       - FRONTEND_URL=https://SCARTCH-DOMAIN
       - DEBUG=False
+      - ROLE_ADMIN=ADMIN # Iservgroup not role!
+      - ROLE_TEACHER=TEACHER # Iservgroup not role!
       #- SQLALCHEMY_DATABASE_URI=ABSOLUTE_PATH_TO_DB_File # optional. Default is set to /app/db/main.db and already in the volume
 
