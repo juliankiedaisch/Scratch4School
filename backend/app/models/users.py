@@ -56,7 +56,10 @@ class User(db.Model):
         # Extract role from user_data if available
         if user_data and 'groups' in user_data:
             role = 'user'  # Default role
-            groups = [elem["act"] for elem in user_data.get('groups', {}).values()]
+            if type(user_data.get('groups')) == dict:
+                groups = [elem["act"] for elem in user_data.get('groups', {}).values()]
+            else:
+                groups = []
             if current_app.config['ROLE_ADMIN'] in groups:
                 role = 'admin'
             elif current_app.config['ROLE_TEACHER'] in groups:

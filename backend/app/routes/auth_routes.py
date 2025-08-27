@@ -74,7 +74,6 @@ def authorize():
         
         if not user_id or not username:
             raise Exception("Incomplete user information from OAuth provider")
-        
         # Create session
         oauth_session = OAuthSession.create_session(
             user_id=user_id,
@@ -83,7 +82,6 @@ def authorize():
             tokens=token,
             user_data=user_info
         )
-        
         # Redirect to frontend with session token
         redirect_url = f"{current_app.config['FRONTEND_URL']}?session_id={oauth_session.id}"
         response =  redirect(redirect_url)

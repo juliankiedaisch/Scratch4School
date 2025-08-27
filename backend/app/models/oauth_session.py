@@ -71,9 +71,8 @@ class OAuthSession(db.Model):
         
         # Extract groups from user data
         oauth_groups = []
-        
         # Check for groups in standard locations
-        if 'groups' in user_data:
+        if 'groups' in user_data and type(user_data['groups']) == dict:
             raw_groups = [elem for elem in user_data.get('groups', {}).values()]
             for group in raw_groups:
                 # Object groups
@@ -81,7 +80,6 @@ class OAuthSession(db.Model):
                     'id': group.get('act'),
                     'name': group.get('name', group.get('act', 'Unknown'))
                 })
-        
         # Now create/update local groups and link to user
         for oauth_group in oauth_groups:
             # Create or get group
