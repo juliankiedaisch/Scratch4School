@@ -1,14 +1,44 @@
 # Scratch4School
-This is the official Scratch 3 GUI from [Scratch website](https://scratch.mit.edu/) with modifications to use it in school. The backend is written in python with an sqlite database. This should be sufficant for a usercase of 0-1000 Users.
 
-The Codebase for the frontend can be found here: [Scratch Codebase](https://github.com/scratchfoundation/scratch-editor)
+![Main Layout](packages/scratch-gui/src/components/login-screen/Scratch4SchoolLogo.png)
 
+Scratch4School is a modified version of the official Scratch 3 GUI from the [Scratch website](https://scratch.mit.edu/), specifically adapted for educational environments. This adaptation enhances the original Scratch platform with features designed to facilitate classroom use, project management, and collaboration between teachers and students.
 
-## Self-hosting Scratch4School with existing Apache as Proxy
+The backend is written in Python with an SQLite database, which provides sufficient performance and reliability for educational settings with 0-1000 users.
+
+The codebase for the frontend is based on the official Scratch editor: [Scratch Codebase](https://github.com/scratchfoundation/scratch-editor)
+
+## Features
+
+### Local Project Storage and Sharing
+![Projects](documentation/projects.gif)
+
+Projects are stored locally on your server. Students can choose to publish their projects to SSO groups, making them accessible to other group members. Published projects can be viewed by others or copied as a starting point for derivative work.
+
+### Teacher View for Student Projects
+![Projects](documentation/teacher.gif)
+
+Users assigned to the teacher group have special access permissions that allow them to view, monitor, and provide feedback on student projects. This facilitates assessment and guidance without disrupting the student's creative process.
+
+### Backdrop Library System
+![Backdrop](documentation/backdrop.gif)
+
+The Backdrop feature serves as a personal library system where users can store reusable elements such as:
+- Code blocks and scripts
+- Character costumes
+- Sound effects
+- Background images
+- Sprite figures
+
+All items saved to the Backdrop are stored locally on your own server and can be easily reused across multiple projects, encouraging modular development and resource sharing.
+
+## Getting Started
+
+### Self-hosting Scratch4School with existing Apache as Proxy
 
 This guide explains how to set up the Scratch4School application on your own server using Docker and Apache as a reverse proxy.
 
-### Prerequisites
+#### Prerequisites
 
 - A server with Docker and Docker Compose installed
 - Apache web server with the following modules enabled:
@@ -21,7 +51,7 @@ This guide explains how to set up the Scratch4School application on your own ser
 - A valid SSL certificate for your domain
 - IServ OAuth credentials (for authentication)
 
-### Step 1: Prepare Your Configuration Files
+#### Step 1: Prepare Your Configuration Files
 
 You need to customize two main configuration files:
 
@@ -35,6 +65,8 @@ Edit the `docker-compose.yml` file:
    - Replace `CLIENT_SECRET` with your IServ OAuth client secret
    - Replace `ISERV-DOMAIN` with your IServ domain (e.g., `iserv.school.edu`)
    - Replace `SCRATCH-DOMAIN` with your Scratch4School domain (e.g., `scratch.school.edu`)
+   - Replace `ROLE_ADMIN` with your admin group (not role!) (e.g., `admins`)
+   - Replace `ROLE_TEACHER` with your teacher group (not role!) (e.g., `lehrende`)
 
 Example of relevant sections to modify:
 
@@ -51,6 +83,8 @@ environment:
   - OAUTH_REDIRECT_URI=https://your-scratch-domain.com/backend/authorize
   # Frontend URL for redirects after auth
   - FRONTEND_URL=https://your-scratch-domain.com
+  - ROLE_ADMIN=ADMIN # Iservgroup not role!
+  - ROLE_TEACHER=TEACHER # Iservgroup not role!
 ```
 
 #### 2. Apache Proxy Configuration
@@ -67,7 +101,7 @@ Edit the `apache_proxy.conf` file:
 
 The ports (8601 for frontend and 5008 for backend) are already configured in both files, but you can confirm these match in both the Apache config and Docker Compose file.
 
-### Step 2: Set Up Docker Containers
+#### Step 2: Set Up Docker Containers
 
 1. Create a directory for your Scratch4School deployment:
    ```bash
@@ -82,7 +116,7 @@ The ports (8601 for frontend and 5008 for backend) are already configured in bot
    docker-compose up -d
    ```
 
-### Step 3: Configure Apache
+#### Step 3: Configure Apache
 
 1. Copy your edited `apache_proxy.conf` to your Apache configuration directory:
    ```bash
@@ -109,13 +143,13 @@ The ports (8601 for frontend and 5008 for backend) are already configured in bot
    sudo systemctl restart apache2
    ```
 
-### Step 4: Verify the Installation
+#### Step 4: Verify the Installation
 
 1. Open your browser and navigate to your domain (e.g., `https://scratch.school.edu`)
 2. You should see the Scratch4School login page
 3. Try logging in with your IServ credentials
 
-### Troubleshooting
+#### Troubleshooting
 
 If you encounter issues:
 
@@ -135,7 +169,7 @@ If you encounter issues:
 - Verify that the OAuth configuration is correct in both IServ and your Docker environment
 - Check that your SSL certificates are valid and properly configured
 
-### Summary of Key Changes
+#### Summary of Key Changes
 
 Here's a quick checklist of all the placeholder values you need to replace:
 
@@ -151,3 +185,7 @@ Here's a quick checklist of all the placeholder values you need to replace:
   - All instances of `SCRATCH_IP` → Your Docker host IP
   - `/path/to/cert.combine` → Path to your SSL certificate
   - `/path/to/private.key` → Path to your private key
+
+## Documentation
+
+Some documentation can be found here ![Wiki](https://github.com/juliankiedaisch/Scratch4School/wiki)
