@@ -17,6 +17,7 @@ import {GUIStoragePropType} from '../gui-config';
 
 import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
+import {getEventXY} from '../lib/touch-utils';
 
 
 const dragTypes = [DragConstants.COSTUME, DragConstants.SOUND, DragConstants.SPRITE];
@@ -34,6 +35,9 @@ class Backpack extends React.Component {
             'handleMouseLeave',
             'handleBlockDragEnd',
             'handleBlockDragUpdate',
+            'handleTouchEnd',
+            'handleTouchMove',
+            'setRef',
             'handleMore'
         ]);
         this.state = {
@@ -57,11 +61,35 @@ class Backpack extends React.Component {
     componentDidMount () {
         this.props.vm.addListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
         this.props.vm.addListener('BLOCK_DRAG_UPDATE', this.handleBlockDragUpdate);
+        document.addEventListener('touchend', this.handleTouchEnd);
+        document.addEventListener('touchmove', this.handleTouchMove, {passive: false});
     }
     componentWillUnmount () {
         this.props.vm.removeListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
         this.props.vm.removeListener('BLOCK_DRAG_UPDATE', this.handleBlockDragUpdate);
+        document.removeEventListener('touchend', this.handleTouchEnd);
+        document.removeEventListener('touchmove', this.handleTouchMove, {passive: false});
     }
+    handleTouchEnd (e) {
+        if (!this.blockDragOverBackpack) return;
+        this.handleBlockDragEnd();
+    }
+
+    handleTouchMove (e) {
+        if (!this.ref) return;
+        const {x, y} = getEventXY(e);
+        const {top, left, bottom, right} = this.ref.getBoundingClientRect();
+        if (x >= left && x <= right && y >= top && y <= bottom) {
+            if (!this.state.blockDragOverBackpack) {
+                this.handleMouseEnter();
+            }
+        } else {
+            if (this.state.blockDragOverBackpack) {
+                this.handleMouseLeave();
+            }
+        }
+    }
+
     handleToggle () {
         const newState = !this.state.expanded;
         this.setState({expanded: newState, contents: []}, () => {
@@ -194,9 +222,13 @@ class Backpack extends React.Component {
     handleMore () {
         this.getContents();
     }
+    setRef (ref) {
+        this.ref = ref;
+    }
     render () {
         return (
             <DroppableBackpack
+                componentRef={this.setRef}
                 blockDragOver={this.state.blockDragOverBackpack}
                 contents={this.state.contents}
                 error={this.state.error}

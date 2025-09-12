@@ -20,8 +20,11 @@ def get_teacher_students(user_info):
             return jsonify({'error': 'Teacher not found'}), 404
         
         # Get students assigned to this teacher
-        students = User.query.filter(User.role.in_(["student", "user"])).all()
-        
+        if user_info.get('role') == 'admin':
+            students = User.query.filter(User.role.in_(["student", "user", "teacher"])).all()
+        else:
+            students = User.query.filter(User.role.in_(["student", "user"])).all()
+
         # Format student data
         student_list = []
         for student in students:

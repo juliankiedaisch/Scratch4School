@@ -78,13 +78,8 @@ def save_backpack_item(user_info):
         body_asset_id = store_asset_data(data['body'], check_asset_mime_type(data['mime']), data['type'], user_info['user_id'])
         
         # Store the thumbnail asset
-        thumbnail_asset_id = store_asset_data(
-            data['thumbnail'], 
-            'image/jpeg', 
-            'thumbnail', 
-            user_info['user_id']
-        )
-        
+        thumbnail_asset_id = store_asset_data(data['thumbnail'], 'image/jpeg', 'thumbnail', user_info['user_id'])
+
         # Create new backpack item
         backpack_item = BackpackItem(
             type=data['type'],
@@ -148,9 +143,7 @@ def store_asset_data(base64_data, mime_type, asset_type, user_id):
         
         # Check if asset with this hash already exists
         existing_asset = Asset.query.filter_by(md5=md5hash).first()
-        if existing_asset:
-            return existing_asset.asset_id
-            
+
         # Determine file extension based on mime type
         extension = mime_type.split('/')[-1]
         if extension == 'jpeg':
@@ -159,7 +152,6 @@ def store_asset_data(base64_data, mime_type, asset_type, user_id):
         # Generate filename with hash
         filename = secure_filename(f"{md5hash}.{extension}")
         upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], asset_type)
-        
         # Create directory if it doesn't exist
         os.makedirs(upload_folder, exist_ok=True)
         
@@ -169,22 +161,24 @@ def store_asset_data(base64_data, mime_type, asset_type, user_id):
             f.write(file_data)
             
         # Create asset record
-        asset = Asset(
-            asset_id=md5hash,
-            asset_type=asset_type,
-            data_format=extension,
-            size=len(file_data),
-            md5=md5hash,
-            owner_id=user_id,
-            file_path=file_path
-        )
-        
-        db.session.add(asset)
-        db.session.commit()
+        if not existing_asset:
+            asset = Asset(
+                asset_id=md5hash,
+                asset_type=asset_type,
+                data_format=extension,
+                size=len(file_data),
+                md5=md5hash,
+                owner_id=user_id,
+                file_path=file_path
+            )
+            
+            db.session.add(asset)
+            db.session.commit()
         
         return md5hash
         
     except Exception as e:
+        print("Error storing asset data", str(e))
         current_app.logger.error(f"Error storing asset data: {str(e)}")
         db.session.rollback()
         raise

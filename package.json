@@ -16,8 +16,8 @@
     "prepare": "husky install",
     "build": "cross-env NODE_ENV=production npm run --workspaces build",
     "clean": "npm run --workspaces clean",
-    "version": "cross-env-shell ./scripts/npm-version.sh",
-    "publish": "cross-env-shell ./scripts/publish.sh"
+    "test": "npm test --workspaces",
+    "version": "cross-env-shell ./scripts/npm-version.sh"
   },
   "config": {
     "commitizen": {
