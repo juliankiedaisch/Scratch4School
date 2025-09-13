@@ -114,7 +114,12 @@ class SaveManager extends React.Component {
                 console.log('[SaveManager] VM listeners updated');
             }
         }
-        
+        // Reset lastAutoSave when projectId changes
+        if (this.context && prevContext && 
+            this.context.projectId !== prevContext.projectId) {
+            this.setState({ lastAutoSave: null });
+            console.log('[SaveManager] Project ID changed, reset lastAutoSave');
+        }
         // Check if project ID has been reset in context
         if (prevContext && prevContext.projectId && 
             this.context && !this.context.projectId) {
@@ -186,7 +191,7 @@ class SaveManager extends React.Component {
         } else if (this.context && this.context.projectId) {
             this.saveProject(this.context.projectId);
         } else {
-            console.warn('[SaveManager] No project ID available for saveProject event');
+            this.saveProject(null);
         }
     }
 
@@ -264,6 +269,7 @@ class SaveManager extends React.Component {
             //console.log('[SaveManager] New project cooldown period ended');
             this.setState({ newProjectCooldown: false });
         }, this.NEW_PROJECT_COOLDOWN);
+        document.dispatchEvent(new CustomEvent('newProjectLoaded'));
         
         //console.log('[SaveManager] UserContext reset for new project');
     }

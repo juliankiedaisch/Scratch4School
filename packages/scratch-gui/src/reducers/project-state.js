@@ -235,19 +235,22 @@ const reducer = function (state, action) {
             if (action.projectId === defaultProjectId || action.projectId === null) {
                 return Object.assign({}, state, {
                     loadingState: LoadingState.FETCHING_NEW_DEFAULT,
-                    projectId: defaultProjectId
+                    projectId: defaultProjectId,
+                    lastAutoSave: null // Reset lastAutoSave when projectId changes
                 });
             }
             return Object.assign({}, state, {
                 loadingState: LoadingState.FETCHING_WITH_ID,
-                projectId: action.projectId
+                projectId: action.projectId,
+                lastAutoSave: null // Reset lastAutoSave when projectId changes
             });
         } else if (state.loadingState === LoadingState.SHOWING_WITHOUT_ID) {
             // if we were showing a project already, don't transition to default project.
             if (action.projectId !== defaultProjectId && action.projectId !== null) {
                 return Object.assign({}, state, {
                     loadingState: LoadingState.FETCHING_WITH_ID,
-                    projectId: action.projectId
+                    projectId: action.projectId,
+                    lastAutoSave: null // Reset lastAutoSave when projectId changes
                 });
             }
         } else { // allow any other states to transition to fetching project
@@ -255,12 +258,14 @@ const reducer = function (state, action) {
             if (action.projectId === defaultProjectId || action.projectId === null) {
                 return Object.assign({}, state, {
                     loadingState: LoadingState.FETCHING_NEW_DEFAULT,
-                    projectId: defaultProjectId
+                    projectId: defaultProjectId,
+                    lastAutoSave: null // Reset lastAutoSave when projectId changes
                 });
             }
             return Object.assign({}, state, {
                 loadingState: LoadingState.FETCHING_WITH_ID,
-                projectId: action.projectId
+                projectId: action.projectId,
+                lastAutoSave: null // Reset lastAutoSave when projectId changes
             });
         }
         return state;

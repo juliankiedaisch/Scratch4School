@@ -57,6 +57,7 @@ class AutoSave extends React.Component {
         // If project has been newly loaded, reset last save time
         if (this.props.projectId !== prevProps.projectId) {
             this.setState({ lastSaveTime: null });
+            console.log('[AutoSave] Project ID changed, reset lastSaveTime');
         }
         
         // If VM instance has changed, update listeners

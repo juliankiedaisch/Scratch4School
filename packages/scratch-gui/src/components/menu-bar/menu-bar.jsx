@@ -253,6 +253,7 @@ class MenuBar extends React.Component {
         document.addEventListener('projectSaveStarted', this.handleSaveStatusUpdate);
         document.addEventListener('projectSaved', this.handleSaveStatusUpdate);
         document.addEventListener('projectSaveError', this.handleSaveStatusUpdate);
+        document.addEventListener('newProjectLoaded', this.handleSaveStatusUpdate);
     }
     
     componentWillUnmount () {
@@ -266,6 +267,7 @@ class MenuBar extends React.Component {
         document.removeEventListener('projectSaveStarted', this.handleSaveStatusUpdate);
         document.removeEventListener('projectSaved', this.handleSaveStatusUpdate);
         document.removeEventListener('projectSaveError', this.handleSaveStatusUpdate);
+        document.removeEventListener('newProjectLoaded', this.handleSaveStatusUpdate);
     }
     
     // Helper to determine if we should log props (only when they change)
@@ -584,6 +586,11 @@ class MenuBar extends React.Component {
             this.setState({
                 isSaving: false,
                 saveError: true
+            });
+        } else if (event.type === 'newProjectLoaded') {
+            this.setState({
+                isSaving: false,
+                lastSaveTime: null
             });
         }
     }
@@ -919,15 +926,17 @@ class MenuBar extends React.Component {
     
                             {/* Account info group with UserContext integration */}
                             <div className={styles.accountInfoGroup}>
-                            <StatusBar 
-                                className={styles.statusBar}
-                                connectionStatus={this.state.connectionStatus}
-                                isSaving={this.state.isSaving}
-                                lastSaveTime={this.state.lastSaveTime}
-                                saveError={this.state.saveError}
-                            />
+                                <StatusBar 
+                                    onClickToSave={this.handleClickSave}
+                                    className={styles.statusBar}
+                                    isSaving={this.state.isSaving}
+                                    lastSaveTime={this.state.lastSaveTime}
+                                    saveError={this.state.saveError}
+                                    isNewProject={this.state.savedProjectId===null}
+                                    projectChanged={userContext.projectChanged} // Use projectChanged from context
+                                />
                                 {isLoggedIn && currentUser ? (
-                                    // ************ user is logged in through OAuth ************
+                                                   // ************ user is logged in through OAuth ************
                                     <React.Fragment>
                                         {/* My Stuff button if URL is available */}
                                         {menuOpts.myStuffUrl ? (

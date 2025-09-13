@@ -1,67 +1,59 @@
 .statusBar {
     display: flex;
     align-items: center;
-    padding: 0 0.5rem;
-    font-size: 0.75rem;
-    height: 1.5rem;
-    background-color: #f5f5f5;
-    border-radius: 5px;
-    border-top: 1px solid #ddd;
-}
-
-.statusItem {
-    display: flex;
-    align-items: center;
-    margin-right: 1rem;
-    white-space: nowrap;
-}
-
-.statusIcon {
-    display: flex;
-    align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-right: 4px;
+    padding: 0 0.5rem;
+    height: 1.5rem;
+    background-color: rgba(245, 245, 245, 0.2);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.statusBar:hover {
+    background-color: rgba(245, 245, 245, 0.3);
 }
 
 .statusDot {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background-color: #888;
+    transition: all 0.3s ease;
 }
 
 /* Status colors */
-.statusPositive .statusDot {
-    background-color: #4CAF50;  /* Green */
+.statusSaved {
+    background-color: #4CAF50; /* Green */
+    box-shadow: 0 0 4px #4CAF50;
 }
 
-.statusNegative .statusDot {
-    background-color: #F44336;  /* Red */
+.statusNeedsSave {
+    background-color: #FF9800; /* Orange */
+    box-shadow: 0 0 4px #FF9800;
 }
 
-.statusWarning .statusDot {
-    background-color: #FF9800;  /* Orange */
+.statusNotSaved {
+    background-color: #9E9E9E; /* Grey */
 }
 
-.statusNeutral .statusDot {
-    background-color: #9E9E9E;  /* Grey */
+.statusError {
+    background-color: #F44336; /* Red */
+    box-shadow: 0 0 4px #F44336;
 }
 
-/* Text colors */
-.statusPositive {
-    color: #2E7D32;
+.statusSaving {
+    background-color: #2196F3; /* Blue */
+    animation: pulse 1.5s infinite;
 }
 
-.statusNegative {
-    color: #C62828;
-}
-
-.statusWarning {
-    color: #EF6C00;
-}
-
-.statusNeutral {
-    color: #616161;
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(33, 150, 243, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
 }
