@@ -12,7 +12,9 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "LICENSE",
+    "TRADEMARK"
   ],
   "scripts": {
     "build": "npm run clean && webpack",

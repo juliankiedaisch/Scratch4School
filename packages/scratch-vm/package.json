@@ -22,7 +22,9 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "LICENSE",
+    "TRADEMARK"
   ],
   "scripts": {
     "build": "npm run docs && webpack --progress",
