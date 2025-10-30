@@ -33,15 +33,22 @@ class Group(db.Model):
     @classmethod
     def get_or_create(cls, external_id, name, description=None):
         """Get existing group or create new one based on external ID"""
-        group = cls.query.filter_by(external_id=external_id).first()
+        from sqlalchemy.exc import SQLAlchemyError
         
-        if not group:
-            group = cls(
-                external_id=external_id,
-                name=name,
-                description=description
-            )
-            db.session.add(group)
-            db.session.flush()  # Generate ID without committing
+        try:
+            group = cls.query.filter_by(external_id=external_id).first()
             
-        return group
+            if not group:
+                group = cls(
+                    external_id=external_id,
+                    name=name,
+                    description=description
+                )
+                db.session.add(group)
+                db.session.flush()  # Generate ID without committing
+            
+            # Note: Commit should be handled by the caller
+            return group
+        except SQLAlchemyError:
+            # Let caller handle the rollback
+            raise

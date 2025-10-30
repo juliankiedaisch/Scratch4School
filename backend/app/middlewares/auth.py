@@ -8,6 +8,8 @@ import requests, os
 def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from sqlalchemy.exc import SQLAlchemyError
+        
         session_id = None
         
         # Check query parameter
@@ -82,8 +84,13 @@ def require_auth(f):
                     else:
                         print(f"Failed to renew session: {response.status_code} {response.text}")
                         return jsonify({'error': 'Session expired and renewal failed', 'renewal_required': True}), 401
-                        
+                
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    print(f"Database error renewing session: {str(e)}")
+                    return jsonify({'error': 'Session expired and renewal failed', 'renewal_required': True}), 401
                 except Exception as e:
+                    db.session.rollback()
                     print(f"Error renewing session: {str(e)}")
                     return jsonify({'error': 'Session expired and renewal failed', 'renewal_required': True}), 401
             else:
@@ -91,8 +98,13 @@ def require_auth(f):
                 return jsonify({'error': 'Session expired and no refresh token available', 'renewal_required': True}), 401
         else:
             # Session is still valid, update last accessed time
-            oauth_session.last_accessed = datetime.now(timezone.utc)
-            db.session.commit()
+            try:
+                oauth_session.last_accessed = datetime.now(timezone.utc)
+                db.session.commit()
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                print(f"Error updating last accessed time: {str(e)}")
+                # Don't fail the request for this minor error
         
         # Store the oauth session in the request object for access in routes
         request.oauth_session = oauth_session
@@ -114,6 +126,9 @@ def check_auth(f):
     """Middleware to check authentication but not require it"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from sqlalchemy.exc import SQLAlchemyError
+        from flask import g
+        
         session_id = None
         
         # Check various places for the session ID
@@ -135,9 +150,14 @@ def check_auth(f):
                 request.user = oauth_session.user
                 
                 # Update last accessed time
-                oauth_session.last_accessed = datetime.now(timezone.utc)
-                from app import db
-                db.session.commit()
+                try:
+                    oauth_session.last_accessed = datetime.now(timezone.utc)
+                    from app import db
+                    db.session.commit()
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    print(f"Error updating last accessed time: {str(e)}")
+                    # Don't fail the request for this minor error
                 
                 g.user_authenticated = True
                 return f(*args, **kwargs)

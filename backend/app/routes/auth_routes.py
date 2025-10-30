@@ -48,6 +48,8 @@ def login():
 @auth_bp.route('/authorize')
 def authorize():
     """Handle OAuth callback with explicit state validation"""
+    from sqlalchemy.exc import SQLAlchemyError
+    
     try:
         # Check state parameter manually first
         received_state = request.args.get('state')
@@ -88,7 +90,13 @@ def authorize():
         response.delete_cookie('oauth_state')
         return response
     
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error during OAuth: {str(e)}")
+        redirect_url = f"{current_app.config['FRONTEND_URL']}?error=Database error during authentication"
+        return redirect(redirect_url)
     except Exception as e:
+        db.session.rollback()
         # Log the error for debugging
         current_app.logger.error(f"OAuth error: {str(e)}")
         
@@ -101,91 +109,109 @@ def authorize():
 @auth_bp.route('/session', methods=['GET'])
 def get_session():
     """Validate and return session details with token refresh support"""
-    # Check for session ID in different locations
-    session_id = request.args.get('session_id')
+    from sqlalchemy.exc import SQLAlchemyError
     
-    # Check X-Session-ID header
-    if not session_id:
-        session_id = request.headers.get('X-Session-ID')
-    
-    # Check Authorization header with Bearer token
-    if not session_id:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            session_id = auth_header.split(' ')[1]
-    
-    if not session_id:
-        current_app.logger.debug("Session request without session ID")
-        return jsonify({'error': 'No session ID provided'}), 400
+    try:
+        # Check for session ID in different locations
+        session_id = request.args.get('session_id')
         
-    # Get the session from database
-    oauth_session = OAuthSession.get_by_session_id(session_id)
-    if not oauth_session:
-        current_app.logger.debug(f"Invalid session ID requested: {session_id}")
-        return jsonify({'error': 'Invalid session'}), 401
-    
-    # Check if session is expired
-    current_time = datetime.now(timezone.utc)
-    # Ensure oauth_session.expires_at is timezone-aware
-    expires_at = oauth_session.expires_at
-    if expires_at.tzinfo is None:
-        # If it's naive, make it aware by assuming it's in UTC
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
-    if expires_at < current_time:
-        current_app.logger.info(f"Session expired for user {oauth_session.user.username}")
+        # Check X-Session-ID header
+        if not session_id:
+            session_id = request.headers.get('X-Session-ID')
         
-        if oauth_session.refresh_token:
-            try:
-                # Create OAuth2Session
-                client = OAuth2Session(
-                    client_id=oauth.oauth_provider.client_id,
-                    client_secret=oauth.oauth_provider.client_secret,
-                )
-                
-                # Refresh the token
-                token_data = client.refresh_token(
-                    oauth.oauth_provider.access_token_url,  # Use the token URL from your provider
-                    refresh_token=oauth_session.refresh_token
-                )
-                
-                # Update session with new tokens
-                oauth_session.update_tokens(token_data)
-                db.session.commit()
-                
-                current_app.logger.info(f"Successfully refreshed token for {oauth_session.user.username}")
-            except Exception as e:
-                current_app.logger.error(f"Token refresh failed: {str(e)}")
-                return jsonify({'error': 'Session expired and refresh failed'}), 401
-        else:
-            return jsonify({'error': 'Session expired'}), 401
-    
-    # Update last accessed timestamp
-    oauth_session.last_accessed = current_time
-    db.session.commit()
-    
-    # Return session data with user info
-    user = oauth_session.user
-    return jsonify({
-        'session': {
-            'id': oauth_session.id,
-            'expires_at': oauth_session.expires_at.isoformat()
-        },
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'role': user.role,
-            'groups': [group.to_dict() for group in user.groups],
-            'avatar_url': user.user_data.get('picture') if user.user_data else None
-        },
-        'authenticated': True
-    })
+        # Check Authorization header with Bearer token
+        if not session_id:
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                session_id = auth_header.split(' ')[1]
+        
+        if not session_id:
+            current_app.logger.debug("Session request without session ID")
+            return jsonify({'error': 'No session ID provided'}), 400
+            
+        # Get the session from database
+        oauth_session = OAuthSession.get_by_session_id(session_id)
+        if not oauth_session:
+            current_app.logger.debug(f"Invalid session ID requested: {session_id}")
+            return jsonify({'error': 'Invalid session'}), 401
+        
+        # Check if session is expired
+        current_time = datetime.now(timezone.utc)
+        # Ensure oauth_session.expires_at is timezone-aware
+        expires_at = oauth_session.expires_at
+        if expires_at.tzinfo is None:
+            # If it's naive, make it aware by assuming it's in UTC
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+        if expires_at < current_time:
+            current_app.logger.info(f"Session expired for user {oauth_session.user.username}")
+            
+            if oauth_session.refresh_token:
+                try:
+                    # Create OAuth2Session
+                    client = OAuth2Session(
+                        client_id=oauth.oauth_provider.client_id,
+                        client_secret=oauth.oauth_provider.client_secret,
+                    )
+                    
+                    # Refresh the token
+                    token_data = client.refresh_token(
+                        oauth.oauth_provider.access_token_url,  # Use the token URL from your provider
+                        refresh_token=oauth_session.refresh_token
+                    )
+                    
+                    # Update session with new tokens
+                    oauth_session.update_tokens(token_data)
+                    db.session.commit()
+                    
+                    current_app.logger.info(f"Successfully refreshed token for {oauth_session.user.username}")
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"Database error during token refresh: {str(e)}")
+                    return jsonify({'error': 'Session expired and refresh failed'}), 401
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"Token refresh failed: {str(e)}")
+                    return jsonify({'error': 'Session expired and refresh failed'}), 401
+            else:
+                return jsonify({'error': 'Session expired'}), 401
+        
+        # Update last accessed timestamp
+        oauth_session.last_accessed = current_time
+        db.session.commit()
+        
+        # Return session data with user info
+        user = oauth_session.user
+        return jsonify({
+            'session': {
+                'id': oauth_session.id,
+                'expires_at': oauth_session.expires_at.isoformat()
+            },
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role,
+                'groups': [group.to_dict() for group in user.groups],
+                'avatar_url': user.user_data.get('picture') if user.user_data else None
+            },
+            'authenticated': True
+        })
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error in get_session: {str(e)}")
+        return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Unexpected error in get_session: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @auth_bp.route('/logout', methods=['POST', 'GET'])
 def logout():
     """Log out the current user by invalidating their session"""
+    from sqlalchemy.exc import SQLAlchemyError
+    
     try:
         # Get session ID from various possible sources
         session_id = None
@@ -230,8 +256,16 @@ def logout():
         })
         
         return response
-        
+    
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error during logout: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Database error during logout'
+        }), 500
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Logout error: {str(e)}")
         return jsonify({
             'success': False,

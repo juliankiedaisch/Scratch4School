@@ -33,42 +33,49 @@ class User(db.Model):
     @classmethod
     def get_or_create(cls, user_id, username, email=None, user_data=None):
         """Get existing user or create a new one"""
-        user = cls.query.get(user_id)
+        from sqlalchemy.exc import SQLAlchemyError
         
-        if not user:
-            # Create new user
-            user = cls(
-                id=user_id,
-                username=username,
-                email=email,
-                user_data=user_data
-            )
-            db.session.add(user)
+        try:
+            user = cls.query.get(user_id)
             
-        else:
-            # Update existing user
-            user.username = username
-            user.email = email
-            user.last_login = datetime.now(timezone.utc)
-            if user_data:
-                user.user_data = user_data
+            if not user:
+                # Create new user
+                user = cls(
+                    id=user_id,
+                    username=username,
+                    email=email,
+                    user_data=user_data
+                )
+                db.session.add(user)
                 
-        # Extract role from user_data if available
-        if user_data and 'groups' in user_data:
-            role = 'user'  # Default role
-            if type(user_data.get('groups')) == dict:
-                groups = [elem["act"] for elem in user_data.get('groups', {}).values()]
             else:
-                groups = []
-            if current_app.config['ROLE_ADMIN'] in groups:
-                role = 'admin'
-            elif current_app.config['ROLE_TEACHER'] in groups:
-                role = 'teacher'
-            else:
-                role = 'student'
-            user.role = role
-        
-        return user
+                # Update existing user
+                user.username = username
+                user.email = email
+                user.last_login = datetime.now(timezone.utc)
+                if user_data:
+                    user.user_data = user_data
+                    
+            # Extract role from user_data if available
+            if user_data and 'groups' in user_data:
+                role = 'user'  # Default role
+                if type(user_data.get('groups')) == dict:
+                    groups = [elem["act"] for elem in user_data.get('groups', {}).values()]
+                else:
+                    groups = []
+                if current_app.config['ROLE_ADMIN'] in groups:
+                    role = 'admin'
+                elif current_app.config['ROLE_TEACHER'] in groups:
+                    role = 'teacher'
+                else:
+                    role = 'student'
+                user.role = role
+            
+            # Note: Commit should be handled by the caller
+            return user
+        except SQLAlchemyError:
+            # Let caller handle the rollback
+            raise
     
     def to_dict(self):
         """Convert user to dictionary"""
