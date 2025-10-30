@@ -4,7 +4,7 @@ import uuid
 
 # Project-Group association table (for publishing to groups)
 project_groups = db.Table('project_groups',
-    db.Column('project_id', db.String(36), db.ForeignKey('projects.id'), primary_key=True),
+    db.Column('project_id', db.Integer, db.ForeignKey('projects.id'), primary_key=True),
     db.Column('group_id', db.Integer, db.ForeignKey('groups.id'), primary_key=True),
     db.Column('published_at', db.DateTime, default=lambda: datetime.now(timezone.utc))
 )

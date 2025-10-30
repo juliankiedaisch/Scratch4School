@@ -4,7 +4,7 @@
 
 Scratch4School is a modified version of the official Scratch 3 GUI from the [Scratch website](https://scratch.mit.edu/), specifically adapted for educational environments. This adaptation enhances the original Scratch platform with features designed to facilitate classroom use, project management, and collaboration between teachers and students.
 
-The backend is written in Python with an SQLite database, which provides sufficient performance and reliability for educational settings with 0-1000 users.
+The backend is written in Python and supports both SQLite and PostgreSQL databases. SQLite is suitable for smaller deployments (0-1000 users), while PostgreSQL is recommended for larger educational settings and production environments requiring better performance and scalability.
 
 The codebase for the frontend is based on the official Scratch editor: [Scratch Codebase](https://github.com/scratchfoundation/scratch-editor)
 
@@ -60,31 +60,44 @@ You need to customize two main configuration files:
 Edit the `docker-compose.yml` file:
 
 1. Replace `CHANGEME` with a secure random string for the `SECRET_KEY`
-2. Set up OAuth configuration:
+2. Replace `CHANGEME_DB_PASSWORD` with a secure password for the PostgreSQL database
+3. Set up OAuth configuration:
    - Replace `CLIENT_ID` with your IServ OAuth client ID
    - Replace `CLIENT_SECRET` with your IServ OAuth client secret
    - Replace `ISERV-DOMAIN` with your IServ domain (e.g., `iserv.school.edu`)
    - Replace `SCRATCH-DOMAIN` with your Scratch4School domain (e.g., `scratch.school.edu`)
    - Replace `ROLE_ADMIN` with your admin group (not role!) (e.g., `admins`)
    - Replace `ROLE_TEACHER` with your teacher group (not role!) (e.g., `lehrende`)
+4. Choose your database backend:
+   - **PostgreSQL (Recommended for production)**: The default configuration uses PostgreSQL. Make sure the `DATABASE_URI` is set to the PostgreSQL connection string.
+   - **SQLite (For development/small deployments)**: Comment out the PostgreSQL `DATABASE_URI` and uncomment the SQLite configuration line.
 
 Example of relevant sections to modify:
 
 ```yaml
-environment:
-  - SECRET_KEY=your_secure_random_string_here
-  # OAuth Configuration
-  - OAUTH_CLIENT_ID=your_client_id_here
-  - OAUTH_CLIENT_SECRET=your_client_secret_here
-  - OAUTH_AUTHORIZE_URL=https://your-iserv-domain.com/iserv/oauth/v2/auth
-  - OAUTH_TOKEN_URL=https://your-iserv-domain.com/iserv/oauth/v2/token
-  - OAUTH_USERINFO_URL=https://your-iserv-domain.com/iserv/public/oauth/userinfo
-  - OAUTH_JWKS_URI=https://your-iserv-domain.com/iserv/public/jwk
-  - OAUTH_REDIRECT_URI=https://your-scratch-domain.com/backend/authorize
-  # Frontend URL for redirects after auth
-  - FRONTEND_URL=https://your-scratch-domain.com
-  - ROLE_ADMIN=ADMIN # Iservgroup not role!
-  - ROLE_TEACHER=TEACHER # Iservgroup not role!
+# PostgreSQL service configuration
+postgres:
+  environment:
+    - POSTGRES_PASSWORD=your_secure_db_password_here
+
+# Backend service configuration
+backend:
+  environment:
+    - SECRET_KEY=your_secure_random_string_here
+    # OAuth Configuration
+    - OAUTH_CLIENT_ID=your_client_id_here
+    - OAUTH_CLIENT_SECRET=your_client_secret_here
+    - OAUTH_AUTHORIZE_URL=https://your-iserv-domain.com/iserv/oauth/v2/auth
+    - OAUTH_TOKEN_URL=https://your-iserv-domain.com/iserv/oauth/v2/token
+    - OAUTH_USERINFO_URL=https://your-iserv-domain.com/iserv/public/oauth/userinfo
+    - OAUTH_JWKS_URI=https://your-iserv-domain.com/iserv/public/jwk
+    - OAUTH_REDIRECT_URI=https://your-scratch-domain.com/backend/authorize
+    # Frontend URL for redirects after auth
+    - FRONTEND_URL=https://your-scratch-domain.com
+    - ROLE_ADMIN=ADMIN # Iservgroup not role!
+    - ROLE_TEACHER=TEACHER # Iservgroup not role!
+    # Database Configuration (PostgreSQL)
+    - DATABASE_URI=postgresql://scratch4school:your_secure_db_password_here@postgres:5432/scratch4school
 ```
 
 #### 2. Apache Proxy Configuration
@@ -105,7 +118,7 @@ The ports (8601 for frontend and 5008 for backend) are already configured in bot
 
 1. Create a directory for your Scratch4School deployment:
    ```bash
-   mkdir -p ~/scratch4school/data/{uploads,db}
+   mkdir -p ~/scratch4school/data/{uploads,db,postgres}
    cd ~/scratch4school
    ```
 
@@ -115,6 +128,12 @@ The ports (8601 for frontend and 5008 for backend) are already configured in bot
    ```bash
    docker-compose up -d
    ```
+
+The system will automatically:
+- Start the PostgreSQL database (if configured)
+- Wait for the database to be ready
+- Initialize database tables on first run
+- Start the frontend and backend services
 
 #### Step 3: Configure Apache
 
@@ -163,11 +182,13 @@ If you encounter issues:
   ```bash
   docker-compose logs -f frontend
   docker-compose logs -f backend
+  docker-compose logs -f postgres
   ```
 
 - Ensure your firewall allows traffic on ports 80 and 443
 - Verify that the OAuth configuration is correct in both IServ and your Docker environment
 - Check that your SSL certificates are valid and properly configured
+- If using PostgreSQL, ensure the database container is healthy: `docker-compose ps`
 
 #### Summary of Key Changes
 
@@ -175,16 +196,86 @@ Here's a quick checklist of all the placeholder values you need to replace:
 
 - In `docker-compose.yml`:
   - `SECRET_KEY=CHANGEME` → Your secure random string
+  - `POSTGRES_PASSWORD=CHANGEME_DB_PASSWORD` → Your secure database password
+  - Update `DATABASE_URI` with the same database password
   - `OAUTH_CLIENT_ID=CLIENT_ID` → Your OAuth client ID
   - `OAUTH_CLIENT_SECRET=CLIENT_SECRET` → Your OAuth client secret
   - All instances of `ISERV-DOMAIN` → Your IServ domain
   - All instances of `SCRATCH-DOMAIN` (and `SCARTCH-DOMAIN`) → Your Scratch4School domain
+  - `ROLE_ADMIN=ADMIN` → Your admin group name
+  - `ROLE_TEACHER=TEACHER` → Your teacher group name
 
 - In `apache_proxy.conf`:
   - All instances of `SCRATCH_DOMAIN` → Your Scratch4School domain
   - All instances of `SCRATCH_IP` → Your Docker host IP
   - `/path/to/cert.combine` → Path to your SSL certificate
   - `/path/to/private.key` → Path to your private key
+
+### Database Options: SQLite vs PostgreSQL
+
+Scratch4School supports both SQLite and PostgreSQL databases. Choose the one that best fits your deployment needs:
+
+#### SQLite (Default for Development)
+**Pros:**
+- No additional setup required
+- Perfect for development and testing
+- Suitable for small deployments (up to ~1000 users)
+- Simple backup (just copy the database file)
+- No separate database server needed
+
+**Cons:**
+- Limited concurrent write performance
+- Not recommended for production with many simultaneous users
+- Locks the entire database during writes
+
+**When to use:** Development, testing, or small school deployments with limited concurrent users.
+
+**Configuration:**
+```yaml
+# In docker-compose.yml, comment out the postgres service and use:
+environment:
+  - DATABASE_URI=sqlite:////app/db/main.db
+```
+
+#### PostgreSQL (Recommended for Production)
+**Pros:**
+- Excellent concurrent access and performance
+- Robust and battle-tested for production
+- Better data integrity and ACID compliance
+- Supports many simultaneous users
+- Advanced features like replication and backup strategies
+
+**Cons:**
+- Requires separate database service
+- Additional configuration needed
+- Slightly more complex backup procedures
+
+**When to use:** Production deployments, larger schools, or when expecting many concurrent users.
+
+**Configuration:**
+```yaml
+# In docker-compose.yml, use the postgres service and configure:
+postgres:
+  environment:
+    - POSTGRES_PASSWORD=your_secure_password
+
+backend:
+  environment:
+    - DATABASE_URI=postgresql://scratch4school:your_secure_password@postgres:5432/scratch4school
+```
+
+#### Migrating from SQLite to PostgreSQL
+
+If you start with SQLite and later need to migrate to PostgreSQL:
+
+1. **Export your data:** Use a tool like `pgloader` or export/import scripts
+2. **Update docker-compose.yml:** Enable the postgres service and update DATABASE_URI
+3. **Restart services:** `docker-compose down && docker-compose up -d`
+4. **Import data:** Restore your exported data to PostgreSQL
+
+**Note:** The database schema is compatible with both databases thanks to SQLAlchemy's abstraction layer.
+
+**For detailed migration instructions**, see [POSTGRESQL_MIGRATION.md](documentation/POSTGRESQL_MIGRATION.md).
 
 ## Documentation
 

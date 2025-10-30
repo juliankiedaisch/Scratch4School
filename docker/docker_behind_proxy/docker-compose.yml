@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database (optional - can use SQLite by not configuring DATABASE_URI)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=scratch4school
+      - POSTGRES_USER=scratch4school
+      - POSTGRES_PASSWORD=CHANGEME_DB_PASSWORD
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scratch4school"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   frontend:
     image: teacherki/scratch4school-frontend:latest
     ports:
@@ -15,6 +31,9 @@ services:
       - ./data/uploads:/app/uploads
       - ./data/db:/app/db
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
@@ -33,5 +52,9 @@ services:
       - DEBUG=False
       - ROLE_ADMIN=ADMIN # Iservgroup not role!
       - ROLE_TEACHER=TEACHER # Iservgroup not role!
-      #- SQLALCHEMY_DATABASE_URI=ABSOLUTE_PATH_TO_DB_File # optional. Default is set to /app/db/main.db and already in the volume
+      # Database Configuration
+      # For PostgreSQL (recommended for production):
+      - DATABASE_URI=postgresql://scratch4school:CHANGEME_DB_PASSWORD@postgres:5432/scratch4school
+      # SQLite is depricated
+      #- DATABASE_URI=sqlite:////app/db/main.db
 

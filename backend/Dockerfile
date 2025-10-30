@@ -6,14 +6,25 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        postgresql-client \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Install psycopg2 for PostgreSQL support
+RUN pip install psycopg2-binary
+
 COPY app ./app
 COPY run.py .
+COPY scripts/migrate_sqlite_to_postgres.py .
+COPY scripts/entrypoint.sh .
+
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 5008
 
@@ -24,4 +35,4 @@ ENV FLASK_APP=run.py
 RUN mkdir -p /app/uploads /app/db
 RUN mkdir -p /app/uploads/thumbnails /app/uploads/projects
 
-CMD ["gunicorn", "-b", "0.0.0.0:5008", "run:app"]
+ENTRYPOINT ["/app/entrypoint.sh"]

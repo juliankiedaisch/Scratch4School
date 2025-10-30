@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDomClient from 'react-dom/client';
 import GUI from './containers/gui';
 import {AppStateProviderHOC} from './lib/app-state-provider-hoc';
 import {EditorState} from './lib/editor-state';
@@ -45,19 +45,20 @@ export const createStandaloneRoot = (
         ...(wrappers ?? [])
     )(GUI) as ReactComponentLike;
 
+    const root = ReactDomClient.createRoot(container);
+
     return {
         render (props: GUIProps) {
-            ReactDOM.render(
+            root.render(
                 <WrappedGui
                     appState={state}
                     {...props}
-                />,
-                container
+                />
             );
         },
 
         unmount () {
-            ReactDOM.unmountComponentAtNode(container);
+            root.unmount();
         }
     };
 };

@@ -23,8 +23,14 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
+    # Supports both SQLite and PostgreSQL
+    # SQLite: sqlite:///path/to/db/main.db
+    # PostgreSQL: postgresql://user:password@host:port/dbname
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
 
 class ProductionConfig(Config):
     DEBUG = False
+    # Supports both SQLite and PostgreSQL
+    # SQLite: sqlite:///path/to/db/main.db
+    # PostgreSQL: postgresql://user:password@host:port/dbname
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
