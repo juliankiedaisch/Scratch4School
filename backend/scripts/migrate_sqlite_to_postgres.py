@@ -21,7 +21,7 @@ def migrate_data():
     print("PostgresPath:", os.environ.get('DATABASE_URI'))
     
     # Paths
-    sqlite_db_path = "/root/mdg-scratch-editor/backend/db/main.db"
+    sqlite_db_path = os.environ.get('SQLALCHEMY_DATABASE_URI')
     
     if not os.path.exists(sqlite_db_path):
         print(f"SQLite database not found at {sqlite_db_path}")
