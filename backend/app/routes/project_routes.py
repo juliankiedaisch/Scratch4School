@@ -47,32 +47,48 @@ def create_project(user_info):
             )
             db.session.add(project)
             db.session.flush()
-            # Store the SB3 file
-            # You could either store it as a binary file or extract its contents
             
-            #Store as binary file
-            upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
-            os.makedirs(upload_folder, exist_ok=True)
-            # Generate a secure filename with timestamp
-            filename = secure_filename(f"{project.id}_{user_info.get('user_id')}.sb3")
-            file_path = os.path.join(upload_folder, filename)
-            project_file.save(file_path)
-            
-            # Handle thumbnail if provided
+            # Store the SB3 file with error handling
+            file_path = None
             thumbnail_path = None
-            thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
-            if 'thumbnail' in request.files:
-                thumbnail_file = request.files['thumbnail']
-                if thumbnail_file.filename != '':
-                    # Save thumbnail
-                    thumbnail_filename = secure_filename(f"thumb_{user_info.get('user_id')}_{project.id}.png")
-                    thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
-                    thumbnail_file.save(thumbnail_path)
+            try:
+                # Store as binary file
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
+                os.makedirs(upload_folder, exist_ok=True)
+                # Generate a secure filename with timestamp
+                filename = secure_filename(f"{project.id}_{user_info.get('user_id')}.sb3")
+                file_path = os.path.join(upload_folder, filename)
+                project_file.save(file_path)
+                
+                # Handle thumbnail if provided
+                thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
+                if 'thumbnail' in request.files:
+                    thumbnail_file = request.files['thumbnail']
+                    if thumbnail_file.filename != '':
+                        # Save thumbnail
+                        thumbnail_filename = secure_filename(f"thumb_{user_info.get('user_id')}_{project.id}.png")
+                        thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
+                        thumbnail_file.save(thumbnail_path)
 
-            project.sb3_file_path = file_path  # Store the file path
-            project.thumbnail_path = thumbnail_path
+                project.sb3_file_path = file_path  # Store the file path
+                project.thumbnail_path = thumbnail_path
 
-            db.session.commit()
+                db.session.commit()
+            except Exception as file_error:
+                # Rollback database changes
+                db.session.rollback()
+                # Delete any created files
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except OSError:
+                        pass
+                if thumbnail_path and os.path.exists(thumbnail_path):
+                    try:
+                        os.remove(thumbnail_path)
+                    except OSError:
+                        pass
+                raise file_error
             current_app.logger.info(f"Project created: {project.id} by {user_info.get('username')}")
             
             # Return the project info
@@ -130,8 +146,8 @@ def update_project(user_info, project_id):
         # Get the current user from request
         user = User.query.get(user_info.get('user_id'))
         
-        # Find the project
-        project = Project.query.get(project_id)
+        # Find the project with row-level lock
+        project = Project.query.filter_by(id=project_id).with_for_update().first()
         if not project:
             return jsonify({'error': 'Project not found'}), 404
             
@@ -424,8 +440,8 @@ def delete_project(user_info, project_id):
         # Get the current user from request
         user = request.user
         
-        # Find the project
-        project = Project.query.get(project_id)
+        # Find the project with row-level lock
+        project = Project.query.filter_by(id=project_id).with_for_update().first()
         if not project:
             return jsonify({'error': 'Project not found'}), 404
             
@@ -470,8 +486,8 @@ def delete_project(user_info, project_id):
 def share_project_with_groups(user_info, project_id):
     """Share a project with specified groups"""
     try:
-        # Get the project
-        project = Project.query.get(project_id)
+        # Get the project with row-level lock
+        project = Project.query.filter_by(id=project_id).with_for_update().first()
         if not project:
             return jsonify({'error': 'Project not found'}), 404
             
@@ -615,8 +631,8 @@ def get_shared_projects(user_info):
 def copy_project(user_info, project_id):
     """Create a copy of an existing project for the authenticated user"""
     try:
-        # Get the original project
-        original_project = Project.query.get(project_id)
+        # Get the original project with shared read lock
+        original_project = Project.query.filter_by(id=project_id).with_for_update(read=True).first()
         if not original_project:
             return jsonify({'error': 'Project not found'}), 404
             

@@ -32,8 +32,9 @@ class Group(db.Model):
     
     @classmethod
     def get_or_create(cls, external_id, name, description=None):
-        """Get existing group or create new one based on external ID"""
-        group = cls.query.filter_by(external_id=external_id).first()
+        """Get existing group or create new one based on external ID with proper locking"""
+        # Query with row-level lock to prevent race conditions
+        group = cls.query.filter_by(external_id=external_id).with_for_update().first()
         
         if not group:
             group = cls(

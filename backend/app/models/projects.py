@@ -21,6 +21,7 @@ class Project(db.Model):
     description = db.Column(db.Text)
     sb3_file_path = db.Column(db.String(255), nullable=True)  # Path to SB3 file
     thumbnail_path = db.Column(db.String(255))  # Add this field
+    version = db.Column(db.Integer, default=1, nullable=False)  # Optimistic locking
     
     # Owner relationship
     owner_id = db.Column(db.String(128), db.ForeignKey('users.id'), nullable=False)
@@ -38,6 +39,12 @@ class Project(db.Model):
     
     def __repr__(self):
         return f'<Project {self.name}>'
+    
+    def update_with_version_check(self, expected_version):
+        """Update project with optimistic locking version check"""
+        if self.version != expected_version:
+            raise Exception("Project was modified by another user. Please refresh and try again.")
+        self.version += 1
     
     def to_dict(self):
         return {

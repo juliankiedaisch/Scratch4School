@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import os
 from werkzeug.utils import secure_filename
 import hashlib
+from sqlalchemy.exc import IntegrityError
 
 assets_bp = Blueprint('assets', __name__)
 
@@ -36,8 +37,8 @@ def create_asset(user_info):
             # Calculate MD5 hash of file data
             md5hash = hashlib.md5(file_data).hexdigest()
             
-            # Check if asset with this hash already exists
-            existing_asset = Asset.query.filter_by(md5=md5hash).first()
+            # Check if asset with this hash and type already exists with lock
+            existing_asset = Asset.query.filter_by(md5=md5hash, asset_type=asset_type).with_for_update().first()
             if existing_asset:
                 return jsonify({
                     'status': 'ok',
@@ -68,13 +69,26 @@ def create_asset(user_info):
                 file_path=file_path
             )
             
-            db.session.add(asset)
-            db.session.commit()
-            
-            return jsonify({
-                'status': 'ok',
-                'assetId': md5hash
-            }), 200
+            try:
+                db.session.add(asset)
+                db.session.commit()
+                
+                return jsonify({
+                    'status': 'ok',
+                    'assetId': md5hash
+                }), 200
+            except IntegrityError:
+                # Asset was created by another concurrent request
+                db.session.rollback()
+                # Return existing asset
+                existing_asset = Asset.query.filter_by(md5=md5hash, asset_type=asset_type).first()
+                if existing_asset:
+                    return jsonify({
+                        'status': 'ok',
+                        'assetId': existing_asset.asset_id
+                    }), 200
+                else:
+                    raise
             
     except Exception as e:
         current_app.logger.error(f"Error creating asset: {str(e)}")

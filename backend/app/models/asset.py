@@ -4,6 +4,9 @@ from datetime import datetime, timezone
 class Asset(db.Model):
     """Asset model for costumes, sounds, etc."""
     __tablename__ = 'assets'
+    __table_args__ = (
+        db.UniqueConstraint('md5', 'asset_type', name='_md5_type_uc'),
+    )
     
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.String(128), nullable=False, unique=True)  # md5 hash

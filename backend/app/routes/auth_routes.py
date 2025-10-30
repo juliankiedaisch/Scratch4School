@@ -118,8 +118,8 @@ def get_session():
         current_app.logger.debug("Session request without session ID")
         return jsonify({'error': 'No session ID provided'}), 400
         
-    # Get the session from database
-    oauth_session = OAuthSession.get_by_session_id(session_id)
+    # Get the session from database with row-level lock
+    oauth_session = OAuthSession.query.filter_by(id=session_id).with_for_update().first()
     if not oauth_session:
         current_app.logger.debug(f"Invalid session ID requested: {session_id}")
         return jsonify({'error': 'Invalid session'}), 401
@@ -156,6 +156,7 @@ def get_session():
                 current_app.logger.info(f"Successfully refreshed token for {oauth_session.user.username}")
             except Exception as e:
                 current_app.logger.error(f"Token refresh failed: {str(e)}")
+                db.session.rollback()
                 return jsonify({'error': 'Session expired and refresh failed'}), 401
         else:
             return jsonify({'error': 'Session expired'}), 401

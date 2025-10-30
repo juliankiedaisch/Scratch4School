@@ -32,8 +32,9 @@ class User(db.Model):
     
     @classmethod
     def get_or_create(cls, user_id, username, email=None, user_data=None):
-        """Get existing user or create a new one"""
-        user = cls.query.get(user_id)
+        """Get existing user or create a new one with proper locking"""
+        # Query with row-level lock to prevent race conditions
+        user = cls.query.filter_by(id=user_id).with_for_update().first()
         
         if not user:
             # Create new user
@@ -44,6 +45,7 @@ class User(db.Model):
                 user_data=user_data
             )
             db.session.add(user)
+            db.session.flush()  # Ensure user is persisted before continuing
             
         else:
             # Update existing user

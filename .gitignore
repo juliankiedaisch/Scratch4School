@@ -141,4 +141,5 @@ dist
 
 backend/uploads/
 backend/db/
+backend/instance/
 data/

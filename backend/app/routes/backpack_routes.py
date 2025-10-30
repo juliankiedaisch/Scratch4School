@@ -74,28 +74,33 @@ def save_backpack_item(user_info):
             if field not in data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
                 
-        # Store the body asset
-        body_asset_id = store_asset_data(data['body'], check_asset_mime_type(data['mime']), data['type'], user_info['user_id'])
-        
-        # Store the thumbnail asset
-        thumbnail_asset_id = store_asset_data(data['thumbnail'], 'image/jpeg', 'thumbnail', user_info['user_id'])
+        try:
+            # Store the body asset
+            body_asset_id = store_asset_data(data['body'], check_asset_mime_type(data['mime']), data['type'], user_info['user_id'])
+            
+            # Store the thumbnail asset
+            thumbnail_asset_id = store_asset_data(data['thumbnail'], 'image/jpeg', 'thumbnail', user_info['user_id'])
 
-        # Create new backpack item
-        backpack_item = BackpackItem(
-            type=data['type'],
-            name=data['name'],
-            mime=check_asset_mime_type(data['mime']),
-            body=body_asset_id,
-            thumbnail=thumbnail_asset_id,
-            owner_id=user_info['user_id']
-        )
-        
-        db.session.add(backpack_item)
-        db.session.commit()
-        
-        # Return the created item with full URLs
-        base_url = get_base_url()
-        return jsonify(backpack_item.to_dict()), 200
+            # Create new backpack item
+            backpack_item = BackpackItem(
+                type=data['type'],
+                name=data['name'],
+                mime=check_asset_mime_type(data['mime']),
+                body=body_asset_id,
+                thumbnail=thumbnail_asset_id,
+                owner_id=user_info['user_id']
+            )
+            
+            db.session.add(backpack_item)
+            db.session.commit()
+            
+            # Return the created item with full URLs
+            base_url = get_base_url()
+            return jsonify(backpack_item.to_dict()), 200
+        except Exception as db_error:
+            current_app.logger.error(f"Database error saving backpack item: {str(db_error)}")
+            db.session.rollback()
+            raise
         
     except Exception as e:
         current_app.logger.error(f"Error saving backpack item: {str(e)}")
