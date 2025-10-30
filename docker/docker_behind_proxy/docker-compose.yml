@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=scratch4school
+      - POSTGRES_USER=scratch
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_db_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scratch -d scratch4school"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   frontend:
     image: teacherki/scratch4school-frontend:latest
     ports:
@@ -15,11 +30,16 @@ services:
       - ./data/uploads:/app/uploads
       - ./data/db:/app/db
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
       - SECRET_KEY=CHANGEME
       - SQLALCHEMY_TRACK_MODIFICATIONS=False
+      # Database Configuration
+      - DATABASE_URI=postgresql://scratch:${POSTGRES_PASSWORD:-changeme_db_password}@db:5432/scratch4school
       # OAuth Configuration
       - OAUTH_CLIENT_ID=CLIENT_ID
       - OAUTH_CLIENT_SECRET=CLIENT_SECRET
@@ -33,5 +53,7 @@ services:
       - DEBUG=False
       - ROLE_ADMIN=ADMIN # Iservgroup not role!
       - ROLE_TEACHER=TEACHER # Iservgroup not role!
-      #- SQLALCHEMY_DATABASE_URI=ABSOLUTE_PATH_TO_DB_File # optional. Default is set to /app/db/main.db and already in the volume
+      #- DATABASE_URI=postgresql://scratch:password@db:5432/scratch4school # Alternative: Use this for PostgreSQL
 
+volumes:
+  postgres_data:

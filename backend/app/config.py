@@ -24,7 +24,25 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
+    
+    # PostgreSQL-optimized engine options
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'max_overflow': 20,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'pool_timeout': 30
+    } if os.environ.get('DEV_DATABASE_URI', '').startswith('postgresql') else {}
 
 class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or f'sqlite:///{os.path.join(os.getcwd(), "db/main.db")}'
+    
+    # PostgreSQL-optimized engine options
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'max_overflow': 20,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'pool_timeout': 30
+    } if os.environ.get('DATABASE_URI', '').startswith('postgresql') else {}

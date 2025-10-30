@@ -24,4 +24,4 @@ ENV FLASK_APP=run.py
 RUN mkdir -p /app/uploads /app/db
 RUN mkdir -p /app/uploads/thumbnails /app/uploads/projects
 
-CMD ["gunicorn", "-b", "0.0.0.0:5008", "run:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5008", "-w", "4", "--threads", "2", "--timeout", "120", "run:app"]
