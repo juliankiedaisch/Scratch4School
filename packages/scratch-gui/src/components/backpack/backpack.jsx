@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {FormattedMessage, defineMessages, injectIntl, intlShape} from 'react-intl';
+import {FormattedMessage, defineMessages, useIntl} from 'react-intl';
 import DragConstants from '../../lib/drag-constants';
 import SpriteSelectorItem from '../../containers/sprite-selector-item.jsx';
 import styles from './backpack.css';
@@ -46,7 +46,6 @@ const Backpack = ({
     dragOver,
     error,
     expanded,
-    intl,
     loading,
     showMore,
     onToggle,
@@ -55,6 +54,7 @@ const Backpack = ({
     onMouseLeave,
     onMore
 }) => {
+    const intl = useIntl();
     // Local state for expansion when onToggle is not provided
     const [localExpanded, setLocalExpanded] = useState(false);
     
@@ -174,7 +174,6 @@ Backpack.propTypes = {
     dragOver: PropTypes.bool,
     error: PropTypes.bool,
     expanded: PropTypes.bool,
-    intl: intlShape,
     loading: PropTypes.bool,
     onDelete: PropTypes.func,
     onMore: PropTypes.func,
@@ -195,4 +194,4 @@ Backpack.defaultProps = {
     onToggle: null
 };
 
-export default injectIntl(Backpack);
+export default Backpack;

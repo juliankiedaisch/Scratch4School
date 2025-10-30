@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {defineMessages, injectIntl, intlShape} from 'react-intl';
+import {defineMessages, injectIntl} from 'react-intl';
 
 import styles from './status-bar.css';
 
@@ -92,7 +92,6 @@ StatusBar.propTypes = {
     projectChanged: PropTypes.bool,
     isNewProject: PropTypes.bool,
     onClickToSave: PropTypes.func,
-    intl: intlShape.isRequired
 };
 
 StatusBar.defaultProps = {

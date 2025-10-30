@@ -4,13 +4,10 @@ import PropTypes from 'prop-types';
 
 import {EditorState} from './editor-state';
 import {setPlayer, setFullScreen, setEmbedded} from '../reducers/mode.js';
-import ConnectedIntlProvider from './connected-intl-provider.jsx';
 
 /**
  * Wraps the editor into the redux state contained within an EditorState instance.
- *
  * @param {React.Component} WrappedComponent - component to provide state for
- *
  * @returns {React.Component} component with redux and intl state provided
  */
 export const AppStateProviderHOC = function (WrappedComponent) {
@@ -40,11 +37,9 @@ export const AppStateProviderHOC = function (WrappedComponent) {
             } = this.props;
             return (
                 <Provider store={appState.store}>
-                    <ConnectedIntlProvider>
-                        <WrappedComponent
-                            {...componentProps}
-                        />
-                    </ConnectedIntlProvider>
+                    <WrappedComponent
+                        {...componentProps}
+                    />
                 </Provider>
             );
         }

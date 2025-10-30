@@ -65,6 +65,10 @@ fi
 
 # Get the latest commit from the source branch
 cd "$WORKING_REPO_DIR"
+git checkout mdg
+echo "Checkout done"
+git pull mdg mdg
+
 LATEST_COMMIT=$(git rev-parse "$SOURCE_BRANCH")
 echo "Latest commit in $SOURCE_BRANCH: $LATEST_COMMIT"
 
@@ -164,6 +168,7 @@ else
 
   # Check if we have any patches to apply
   PATCH_COUNT=$(ls -1 "$PATCHES_DIR"/*.patch 2>/dev/null | wc -l || echo "0")
+  echo "$PATCH_COUNT is Patchcount"
   if [ "$PATCH_COUNT" -eq 0 ]; then
     echo "No new commits to publish. Already up to date."
     

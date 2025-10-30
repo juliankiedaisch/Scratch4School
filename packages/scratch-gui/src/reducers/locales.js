@@ -1,9 +1,6 @@
-import {addLocaleData} from 'react-intl';
 import {localeData, isRtl} from 'scratch-l10n';
 import editorMessages from 'scratch-l10n/locales/editor-msgs';
 import customDeMessages from '../locales/de.json'; // Import your custom German translations
-
-addLocaleData(localeData);
 
 // Merge custom translations with the ones from scratch-l10n
 const mergeMessages = () => {

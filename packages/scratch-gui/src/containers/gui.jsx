@@ -4,7 +4,8 @@ import {compose} from 'redux';
 import {connect} from 'react-redux';
 import ReactModal from 'react-modal';
 import VM from '@scratch/scratch-vm';
-import {injectIntl, intlShape} from 'react-intl';
+import {injectIntl} from 'react-intl';
+import intlShape from '../lib/intlShape.js';
 
 import ErrorBoundaryHOC from '../lib/error-boundary-hoc.jsx';
 import {
@@ -78,7 +79,7 @@ class GUI extends React.Component {
                 `Error in Scratch GUI [location=${window.location}]: ${this.props.error}`);
         }
         const {
-            /* eslint-disable no-unused-vars */
+             
             assetHost,
             cloudHost,
             error,
@@ -90,7 +91,7 @@ class GUI extends React.Component {
             onVmInit,
             projectHost,
             projectId,
-            /* eslint-enable no-unused-vars */
+             
             children,
             fetchingProject,
             isLoading,
@@ -127,6 +128,7 @@ GUI.propTypes = {
     isShowingProject: PropTypes.bool,
     isTotallyNormal: PropTypes.bool,
     loadingStateVisible: PropTypes.bool,
+    manuallySaveThumbnails: PropTypes.bool,
     onProjectLoaded: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onStorageInit: PropTypes.func,
@@ -134,6 +136,10 @@ GUI.propTypes = {
     onVmInit: PropTypes.func,
     platform: PropTypes.oneOf(Object.keys(PLATFORM)),
     setPlatform: PropTypes.func.isRequired,
+    /**
+     * Whether to highlight new editor features in the UI.
+     */
+    showNewFeatureCallouts: PropTypes.bool,
     projectHost: PropTypes.string,
     projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     shouldStopProject: PropTypes.bool,

@@ -9,13 +9,11 @@ import {UserProvider} from '../contexts/UserContext';
 /**
  * Higher Order Component to provide redux state. If an `intl` prop is provided
  * it will override the internal `intl` redux state
- *
  * @param {React.Component} WrappedComponent - component to provide state for
  * @param {boolean} localesOnly - only provide the locale state, not everything
  *                      required by the GUI. Used to exclude excess state when
  *                      only rendering modals, not the GUI.
  * @param {GUIConfigFactory} configFactory - The configuration to use.
- *
  * @returns {React.Component} component with redux and intl state provided
  */
 const AppStateHOC = function (WrappedComponent, localesOnly, configFactory) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { defineMessages, FormattedMessage, injectIntl, intlShape } from 'react-intl';
+import { defineMessages, FormattedMessage, injectIntl } from 'react-intl';
 import {connect} from 'react-redux';
 import ReactModal from 'react-modal';
 import { UserContext } from '../../contexts/UserContext';
@@ -921,7 +921,6 @@ ProjectsModal.propTypes = {
         loadProject: PropTypes.func.isRequired
     }),
     onUpdateProjectTitle: PropTypes.func.isRequired,
-    intl: intlShape.isRequired,
     onSetPlayer: PropTypes.func.isRequired,
     onSetFullScreen: PropTypes.func.isRequired
 };

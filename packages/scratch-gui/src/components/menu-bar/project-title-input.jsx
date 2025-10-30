@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {defineMessages, intlShape, injectIntl} from 'react-intl';
+import {defineMessages, injectIntl} from 'react-intl';
 import {setProjectTitle} from '../../reducers/project-title';
 import { UserContext } from '../../contexts/UserContext';
 
@@ -85,7 +85,6 @@ class ProjectTitleInput extends React.Component {
 
 ProjectTitleInput.propTypes = {
     className: PropTypes.string,
-    intl: intlShape.isRequired,
     onSubmit: PropTypes.func,
     projectTitle: PropTypes.string
 };
