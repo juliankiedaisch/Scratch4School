@@ -149,6 +149,94 @@ The ports (8601 for frontend and 5008 for backend) are already configured in bot
 2. You should see the Scratch4School login page
 3. Try logging in with your IServ credentials
 
+#### PostgreSQL for High-Concurrency Deployments (100+ Users)
+
+For production deployments with 100+ concurrent users, we recommend using PostgreSQL instead of SQLite. PostgreSQL provides better support for concurrent access and improved performance under heavy load.
+
+##### Benefits of PostgreSQL
+
+- **Concurrent Access**: Handles hundreds of simultaneous users without write locks
+- **Connection Pooling**: Efficiently manages database connections with configurable pool sizes
+- **Transaction Safety**: Automatic retry logic for transient database errors
+- **Scalability**: Better performance for large datasets and complex queries
+
+##### PostgreSQL Configuration
+
+The updated `docker-compose.yml` files already include PostgreSQL support. The database service is configured with:
+
+- **Image**: `postgres:15-alpine` (lightweight and performant)
+- **Database**: `scratch4school`
+- **User**: `scratch`
+- **Password**: Set via `POSTGRES_PASSWORD` environment variable
+- **Persistent Storage**: Data stored in `postgres_data` volume
+- **Health Checks**: Ensures database is ready before backend starts
+
+##### Environment Variables
+
+Set the following environment variables in your `docker-compose.yml`:
+
+```yaml
+environment:
+  # Database Configuration (PostgreSQL)
+  - DATABASE_URI=postgresql://scratch:${POSTGRES_PASSWORD}@db:5432/scratch4school
+  - POSTGRES_PASSWORD=your_secure_db_password_here
+```
+
+For local development with SQLite (not recommended for production):
+```yaml
+environment:
+  # Database Configuration (SQLite - for local development only)
+  - DATABASE_URI=sqlite:///db/main.db
+```
+
+##### Migration from SQLite to PostgreSQL
+
+If you're migrating from an existing SQLite installation:
+
+1. **Backup your SQLite database**:
+   ```bash
+   cd ~/scratch4school/data
+   cp db/main.db db/main.db.backup
+   ```
+
+2. **Update your `docker-compose.yml`** with PostgreSQL configuration (already included in the latest version).
+
+3. **Set secure password**:
+   ```bash
+   export POSTGRES_PASSWORD="your_secure_password_here"
+   ```
+
+4. **Start PostgreSQL service**:
+   ```bash
+   docker-compose up -d db
+   ```
+
+5. **Wait for PostgreSQL to be ready**:
+   ```bash
+   docker-compose logs -f db
+   # Wait for "database system is ready to accept connections"
+   ```
+
+6. **Initialize database schema** (backend will auto-create tables on first run):
+   ```bash
+   docker-compose up -d backend
+   docker-compose logs -f backend
+   ```
+
+7. **Optional**: Migrate data from SQLite to PostgreSQL using a migration tool like `pgloader` or manual export/import.
+
+Note: The application will automatically create the required database schema on first startup with PostgreSQL.
+
+##### Performance Tuning
+
+The backend is configured with the following PostgreSQL optimizations:
+
+- **Connection Pool**: 10 connections with 20 overflow
+- **Pool Recycle**: Connections recycled every hour
+- **Pre-ping**: Validates connections before use
+- **Gunicorn Workers**: 4 worker processes with 2 threads each
+- **Timeout**: 120 seconds for long-running operations
+
 #### Troubleshooting
 
 If you encounter issues:
@@ -163,11 +251,18 @@ If you encounter issues:
   ```bash
   docker-compose logs -f frontend
   docker-compose logs -f backend
+  docker-compose logs -f db
+  ```
+
+- Check PostgreSQL connection:
+  ```bash
+  docker-compose exec db psql -U scratch -d scratch4school -c "SELECT version();"
   ```
 
 - Ensure your firewall allows traffic on ports 80 and 443
 - Verify that the OAuth configuration is correct in both IServ and your Docker environment
 - Check that your SSL certificates are valid and properly configured
+- For database issues, check `POSTGRES_PASSWORD` is set correctly in your environment
 
 #### Summary of Key Changes
 
@@ -175,16 +270,21 @@ Here's a quick checklist of all the placeholder values you need to replace:
 
 - In `docker-compose.yml`:
   - `SECRET_KEY=CHANGEME` → Your secure random string
+  - `POSTGRES_PASSWORD=changeme_db_password` → Your secure database password (PostgreSQL)
   - `OAUTH_CLIENT_ID=CLIENT_ID` → Your OAuth client ID
   - `OAUTH_CLIENT_SECRET=CLIENT_SECRET` → Your OAuth client secret
   - All instances of `ISERV-DOMAIN` → Your IServ domain
   - All instances of `SCRATCH-DOMAIN` (and `SCARTCH-DOMAIN`) → Your Scratch4School domain
+  - `ROLE_ADMIN=ADMIN` → Your IServ admin group name
+  - `ROLE_TEACHER=TEACHER` → Your IServ teacher group name
 
 - In `apache_proxy.conf`:
   - All instances of `SCRATCH_DOMAIN` → Your Scratch4School domain
   - All instances of `SCRATCH_IP` → Your Docker host IP
   - `/path/to/cert.combine` → Path to your SSL certificate
   - `/path/to/private.key` → Path to your private key
+
+See `backend/.env.example` for a complete list of environment variables.
 
 ## Documentation
 
