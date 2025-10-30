@@ -115,8 +115,8 @@ def create_project(user_info):
             return jsonify({'error': 'No project content provided'}), 400
             
     except Exception as e:
-        current_app.logger.error(f"Error creating project: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error creating project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @projects_bp.route('/<project_id>', methods=['PUT'])
@@ -215,8 +215,8 @@ def update_project(user_info, project_id):
             return jsonify({'error': 'No project content provided'}), 400
             
     except Exception as e:
-        current_app.logger.error(f"Error updating project: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error updating project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @projects_bp.route('/<project_id>/metadata', methods=['GET'])
@@ -461,8 +461,8 @@ def delete_project(user_info, project_id):
         }), 200
             
     except Exception as e:
-        current_app.logger.error(f"Error deleting project: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error deleting project: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 @projects_bp.route('/<int:project_id>/share', methods=['POST'])
@@ -529,8 +529,8 @@ def share_project_with_groups(user_info, project_id):
         return jsonify(result), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error sharing project: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error sharing project: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @projects_bp.route('/shared', methods=['GET'])

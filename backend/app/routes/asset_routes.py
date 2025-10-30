@@ -77,8 +77,8 @@ def create_asset(user_info):
             }), 200
             
     except Exception as e:
-        current_app.logger.error(f"Error creating asset: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error creating asset: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @assets_bp.route('/<asset_id>.<format>', methods=['GET'])

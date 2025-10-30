@@ -98,8 +98,8 @@ def save_backpack_item(user_info):
         return jsonify(backpack_item.to_dict()), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error saving backpack item: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error saving backpack item: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @backpack_bp.route('/<item_id>', methods=['DELETE'])
@@ -124,8 +124,8 @@ def delete_backpack_item(user_info, item_id):
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error deleting backpack item: {str(e)}")
         db.session.rollback()
+        current_app.logger.error(f"Error deleting backpack item: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 def store_asset_data(base64_data, mime_type, asset_type, user_id):
@@ -178,9 +178,9 @@ def store_asset_data(base64_data, mime_type, asset_type, user_id):
         return md5hash
         
     except Exception as e:
+        db.session.rollback()
         print("Error storing asset data", str(e))
         current_app.logger.error(f"Error storing asset data: {str(e)}")
-        db.session.rollback()
         raise
 
 
