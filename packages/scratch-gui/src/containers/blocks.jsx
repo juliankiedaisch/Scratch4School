@@ -165,6 +165,10 @@ class Blocks extends React.Component {
         );
     }
     componentDidUpdate (prevProps) {
+        if (this.props.useCatBlocks !== prevProps.useCatBlocks) {
+            this.ScratchBlocks = VMScratchBlocks(this.props.vm, this.props.useCatBlocks);
+        }
+
         // If any modals are open, call hideChaff to close z-indexed field editors
         if (this.props.anyModalVisible && !prevProps.anyModalVisible) {
             this.ScratchBlocks.hideChaff();
@@ -699,7 +703,7 @@ const mapStateToProps = state => ({
     toolboxXML: state.scratchGui.toolbox.toolboxXML,
     customProceduresVisible: state.scratchGui.customProcedures.active,
     workspaceMetrics: state.scratchGui.workspaceMetrics,
-    useCatBlocks: isTimeTravel2020(state)
+    useCatBlocks: isTimeTravel2020(state) || state.scratchGui.theme.theme === 'high-contrast'
 });
 
 const mapDispatchToProps = dispatch => ({

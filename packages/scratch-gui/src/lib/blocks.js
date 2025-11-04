@@ -5,7 +5,10 @@
  * @returns {ScratchBlocks} ScratchBlocks connected with the vm
  */
 export default function (vm, useCatBlocks) {
-    const ScratchBlocks = useCatBlocks ? require('cat-blocks') : require('scratch-blocks');
+    const ScratchBlocks = require('scratch-blocks');
+
+    ScratchBlocks.useCatBlocks = useCatBlocks;
+    
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {
             message0: '%1',
