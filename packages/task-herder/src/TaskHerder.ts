@@ -1,10 +1,10 @@
 import pLimit, { type LimitFunction } from 'p-limit'
 
 export interface BucketOptions {
-  /** Maximum number of tokens in the bucket */
-  maxTokens: number
-  /** Rate at which tokens are added to the bucket (tokens per second) */
-  refillRate: number
+  /** The maximum number of tokens in the bucket controls the burst limit */
+  burstLimit: number
+  /** Rate at which tokens are added to the bucket (tokens per second) controls the sustained rate */
+  sustainRate: number
   /** Initial number of tokens in the bucket (default to a full bucket) */
   startingTokens?: number
   /** Reject a task if it would cause the total queue cost to exceed this limit (default: no limit) */
@@ -104,8 +104,8 @@ class TaskRecord<T> {
  * @see {@link https://en.wikipedia.org/wiki/Token_bucket} for more information about the algorithm.
  */
 export class TaskHerder {
-  private readonly maxTokens: number
-  private readonly refillRate: number
+  private readonly burstLimit: number
+  private readonly sustainRate: number
   private readonly queueCostLimit: number
   private readonly concurrencyLimiter: LimitFunction
   private readonly boundRunTasks = this.runTasks.bind(this)
@@ -116,9 +116,9 @@ export class TaskHerder {
   private lastRefillTime: number = Date.now()
 
   constructor(options: BucketOptions) {
-    this.maxTokens = options.maxTokens
-    this.refillRate = options.refillRate
-    this.tokenCount = options.startingTokens ?? options.maxTokens
+    this.burstLimit = options.burstLimit
+    this.sustainRate = options.sustainRate
+    this.tokenCount = options.startingTokens ?? options.burstLimit
     this.queueCostLimit = options.queueCostLimit ?? Infinity
     this.concurrencyLimiter = pLimit(options.concurrency ?? 1)
   }
@@ -138,7 +138,7 @@ export class TaskHerder {
   do<T>(task: () => T | Promise<T>, taskOptions: TaskOptions = {}): Promise<T> {
     const taskRecord = new TaskRecord<T>(task, taskOptions)
 
-    if (taskRecord.cost > this.maxTokens) {
+    if (taskRecord.cost > this.burstLimit) {
       return Promise.reject(new Error(CancelReason.TaskTooExpensive))
     }
 
@@ -218,8 +218,8 @@ export class TaskHerder {
     }
 
     this.lastRefillTime = now
-    const tokensToAdd = (timeSinceRefill / 1000) * this.refillRate
-    this.tokenCount = Math.min(this.maxTokens, this.tokenCount + tokensToAdd)
+    const tokensToAdd = (timeSinceRefill / 1000) * this.sustainRate
+    this.tokenCount = Math.min(this.burstLimit, this.tokenCount + tokensToAdd)
   }
 
   /**
@@ -251,7 +251,7 @@ export class TaskHerder {
         return
       }
 
-      if (nextRecord.cost > this.maxTokens) {
+      if (nextRecord.cost > this.burstLimit) {
         // This should have been caught when the task was added
         nextRecord.cancel(new Error(CancelReason.TaskTooExpensive))
         continue
@@ -265,7 +265,7 @@ export class TaskHerder {
         // We can't currently afford this task. Put it back and wait until we can, then try again.
         this.pendingTaskRecords.unshift(nextRecord)
         const tokensNeeded = Math.max(nextRecord.cost - this.tokenCount, 0)
-        const estimatedWait = Math.ceil((1000 * tokensNeeded) / this.refillRate)
+        const estimatedWait = Math.ceil((1000 * tokensNeeded) / this.sustainRate)
         this.timeout = setTimeout(this.boundRunTasks, estimatedWait)
         return
       }
