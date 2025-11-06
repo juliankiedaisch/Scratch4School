@@ -59,7 +59,7 @@ class TaskRecord<T> {
   /** The promise wrapping the task */
   public readonly promise: Promise<T>
   /** Run the task and settle the promise */
-  public readonly run: () => void
+  public readonly run: () => Promise<void>
   /** Cancel the task and reject the promise */
   public readonly cancel: (e: Error) => void
 
@@ -82,9 +82,9 @@ class TaskRecord<T> {
     this.cancel = e => {
       reject(e)
     }
-    this.run = () => {
+    this.run = async () => {
       try {
-        const result = task()
+        const result = await task()
         resolve(result)
       } catch (error) {
         reject(error)
