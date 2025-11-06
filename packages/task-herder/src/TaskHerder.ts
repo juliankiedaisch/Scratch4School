@@ -1,24 +1,5 @@
 import pLimit, { type LimitFunction } from 'p-limit'
-
-export interface BucketOptions {
-  /** The maximum number of tokens in the bucket controls the burst limit */
-  burstLimit: number
-  /** Rate at which tokens are added to the bucket (tokens per second) controls the sustained rate */
-  sustainRate: number
-  /** Initial number of tokens in the bucket (default to a full bucket) */
-  startingTokens?: number
-  /** Reject a task if it would cause the total queue cost to exceed this limit (default: no limit) */
-  queueCostLimit?: number
-  /** Number of tasks that can be processed concurrently (default: 1) */
-  concurrency?: number
-}
-
-export interface TaskOptions {
-  /** Cost of the task in tokens (default: 1) */
-  cost?: number
-  /** If set, the task will be aborted if this signal is triggered */
-  abortSignal?: AbortSignal
-}
+import { PromiseWithResolvers } from './PromiseWithResolvers'
 
 export const CancelReason = {
   QueueCostLimitExceeded: 'Queue cost limit exceeded',
@@ -27,30 +8,11 @@ export const CancelReason = {
   TaskTooExpensive: 'Task cost exceeds maximum bucket size',
 } as const
 
-/**
- * Equivalent to `Promise.withResolvers`, which is not yet widely available.
- * @todo Remove this function when `Promise.withResolvers` is widely available, likely around September 2026.
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers}
- * @returns An object containing the promise along with its resolve and reject functions.
- */
-function PromiseWithResolvers<T>(): {
-  promise: Promise<T>
-  resolve: (value: T | PromiseLike<T>) => void
-  reject: (reason?: unknown) => void
-} {
-  let resolve
-  let reject
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  // The `as unknown as` casts are necessary because TypeScript doesn't
-  // know that the Promise executor is called synchronously.
-  return {
-    promise,
-    resolve: resolve as unknown as (value: T | PromiseLike<T>) => void,
-    reject: reject as unknown as (reason?: unknown) => void,
-  }
+interface TaskOptions {
+  /** Cost of the task in tokens (default: 1) */
+  cost?: number
+  /** If set, the task will be aborted if this signal is triggered */
+  abortSignal?: AbortSignal
 }
 
 class TaskRecord<T> {
@@ -91,6 +53,19 @@ class TaskRecord<T> {
       }
     }
   }
+}
+
+export interface BucketOptions {
+  /** The maximum number of tokens in the bucket controls the burst limit */
+  burstLimit: number
+  /** Rate at which tokens are added to the bucket (tokens per second) controls the sustained rate */
+  sustainRate: number
+  /** Initial number of tokens in the bucket (default to a full bucket) */
+  startingTokens?: number
+  /** Reject a task if it would cause the total queue cost to exceed this limit (default: no limit) */
+  queueCostLimit?: number
+  /** Number of tasks that can be processed concurrently (default: 1) */
+  concurrency?: number
 }
 
 /**

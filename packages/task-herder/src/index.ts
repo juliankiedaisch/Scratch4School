@@ -1,3 +1,1 @@
-import { TaskHerder } from './TaskHerder'
-
-export { TaskHerder }
+export { type BucketOptions, CancelReason, TaskHerder } from './TaskHerder'
