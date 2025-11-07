@@ -32,12 +32,6 @@ class TaskRecord<T> {
   constructor(task: () => T | Promise<T>, options: TaskOptions = {}) {
     this.cost = options.cost ?? 1
 
-    if (options.abortSignal) {
-      options.abortSignal.addEventListener('abort', () => {
-        this.cancel(new Error(CancelReason.Aborted))
-      })
-    }
-
     const { promise, resolve, reject } = PromiseWithResolvers<T>()
 
     this.promise = promise
@@ -125,6 +119,10 @@ export class TaskHerder {
     }
 
     this.pendingTaskRecords.push(taskRecord)
+
+    taskOptions.abortSignal?.addEventListener('abort', () => {
+      this.cancel(taskRecord.promise, new Error(CancelReason.Aborted))
+    })
 
     // If the queue was empty, we need to prime the pump
     if (this.pendingTaskRecords.length === 1) {
