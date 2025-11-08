@@ -84,6 +84,7 @@ def get_student_projects(user_info, student_id):
     """
     Get ALL projects for a specific student (normal + collaborative)
     ✅ Teachers see both active AND deleted projects
+    ✅ Sorted by last edited time (last commit or working copy save)
     """
     try:
         student = User.query.get(student_id)
@@ -107,7 +108,7 @@ def get_student_projects(user_info, student_id):
         if not include_deleted:
             collab_query = collab_query.filter(CollaborativeProject.deleted_at == None)
         
-        collab_projects = collab_query.order_by(CollaborativeProject.created_at.desc()).all()
+        collab_projects = collab_query.all()
         
         # ============================================================
         # FORMAT RESPONSE
@@ -122,17 +123,36 @@ def get_student_projects(user_info, student_id):
             collab_dict['deleted_at'] = collab.deleted_at.isoformat() if collab.deleted_at else None
             collab_dict['deleted_by'] = collab.deleted_by
             
-            # Add thumbnail from latest commit
+            # Calculate last_edited_at from latest commit or any working copy
+            last_edited_at = collab.created_at  # Default to creation time
+            
+            # Check latest commit time
             if collab.latest_commit_id:
-                latest_commit_project = Project.query.get(collab.latest_commit_id)
-                if latest_commit_project:
-                    collab_dict['thumbnail_url'] = latest_commit_project.thumbnail_url
+                latest_commit = Commit.query.filter_by(
+                    collaborative_project_id=collab.id
+                ).order_by(Commit.committed_at.desc()).first()
+                
+                if latest_commit:
+                    last_edited_at = max(last_edited_at, latest_commit.committed_at)
+                    latest_commit_project = Project.query.get(collab.latest_commit_id)
+                    if latest_commit_project:
+                        collab_dict['thumbnail_url'] = latest_commit_project.thumbnail_url
+            
+            # Check all working copies times (not just student's)
+            working_copies = WorkingCopy.query.filter_by(
+                collaborative_project_id=collab.id
+            ).all()
+            
+            for wc in working_copies:
+                last_edited_at = max(last_edited_at, wc.updated_at)
+            
+            collab_dict['last_edited_at'] = last_edited_at.isoformat()
             
             projects_data.append(collab_dict)
         
-        # Sort by updated_at or created_at
+        # Sort by last_edited_at descending (most recent first)
         projects_data.sort(
-            key=lambda p: p.get('updated_at') or p.get('created_at'),
+            key=lambda p: p.get('last_edited_at') or p.get('updated_at') or p.get('created_at'),
             reverse=True
         )
         

@@ -48,6 +48,7 @@ if [ "$SHOW_HELP" = true ]; then
   exit 0
 fi
 
+
 echo "==== Publishing from $SOURCE_BRANCH to GitHub ===="
 if [ -n "$TAG_NAME" ]; then
   echo "Will create tag: $TAG_NAME"
@@ -149,6 +150,16 @@ if [ "$FIRST_RUN" = true ]; then
   echo "Created initial snapshot commit"
   
 else
+
+  # Now setup the public repository
+  cd "$PUBLIC_REPO_DIR"
+
+  # Pull latest changes
+  echo "Syncing with GitHub..."
+  git pull origin "$PUBLIC_BRANCH" || echo "Could not pull (possibly empty repository)"
+
+  cd "$WORKING_REPO_DIR"
+
   # Not the first run - create patches for incremental updates with history
   PATCHES_DIR="$TMP_DIR/patches"
   mkdir -p "$PATCHES_DIR"
@@ -189,13 +200,6 @@ else
   fi
 
   echo "Created $PATCH_COUNT patch files"
-
-  # Now setup the public repository
-  cd "$PUBLIC_REPO_DIR"
-
-  # Pull latest changes
-  echo "Syncing with GitHub..."
-  git pull origin "$PUBLIC_BRANCH" || echo "Could not pull (possibly empty repository)"
 
   # Apply patches in order to apply new commits
   echo "Applying patches for new commits..."

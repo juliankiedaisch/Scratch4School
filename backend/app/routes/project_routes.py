@@ -589,6 +589,7 @@ def get_owned_projects(user_info):
     """
     Get projects owned by user (owner)
     ✅ Uses permission system
+    ✅ Sorted by last edited time (last commit or working copy save)
     """
     try:
         user = User.query.get(user_info.get('user_id'))
@@ -616,24 +617,39 @@ def get_owned_projects(user_info):
                     'access_via': 'owner'
                 }
                 
-                # Check for working copy
+                # Calculate last_edited_at from latest commit or working copy
+                last_edited_at = proj.created_at  # Default to creation time
+                
+                # Check latest commit time
+                if proj.latest_commit_id:
+                    latest_commit = Commit.query.filter_by(
+                        collaborative_project_id=proj.id
+                    ).order_by(Commit.committed_at.desc()).first()
+                    
+                    if latest_commit:
+                        last_edited_at = max(last_edited_at, latest_commit.committed_at)
+                        latest_commit_project = Project.query.get(proj.latest_commit_id)
+                        if latest_commit_project:
+                            project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                
+                # Check working copy time
                 wc = user.get_working_copy(proj.id)
                 project_data['has_working_copy'] = wc is not None
                 if wc:
                     project_data['working_copy_id'] = wc.project_id
                     project_data['working_copy_has_changes'] = wc.has_changes
+                    last_edited_at = max(last_edited_at, wc.updated_at)
                 
-                # Get thumbnail from latest commit
-                if proj.latest_commit_id:
-                    latest_commit_project = Project.query.get(proj.latest_commit_id)
-                    if latest_commit_project:
-                        project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                project_data['last_edited_at'] = last_edited_at.isoformat()
                 
                 # Get permissions (for display)
                 all_users_with_access = proj.get_all_users_with_access()
                 project_data['collaborator_count'] = len(all_users_with_access)
                 
                 owned_projects.append(project_data)
+        
+        # Sort by last_edited_at descending (most recent first)
+        owned_projects.sort(key=lambda p: p['last_edited_at'], reverse=True)
         
         return jsonify({
             'projects': owned_projects,
@@ -654,6 +670,7 @@ def get_collaboration_projects(user_info):
     """
     Get projects where user has write or admin permission but is NOT owner
     ✅ Uses permission system
+    ✅ Sorted by last edited time (last commit or working copy save)
     """
     try:
         user = User.query.get(user_info.get('user_id'))
@@ -686,24 +703,39 @@ def get_collaboration_projects(user_info):
                         'access_via': access_via
                     }
                     
-                    # Check for working copy
+                    # Calculate last_edited_at from latest commit or working copy
+                    last_edited_at = proj.created_at  # Default to creation time
+                    
+                    # Check latest commit time
+                    if proj.latest_commit_id:
+                        latest_commit = Commit.query.filter_by(
+                            collaborative_project_id=proj.id
+                        ).order_by(Commit.committed_at.desc()).first()
+                        
+                        if latest_commit:
+                            last_edited_at = max(last_edited_at, latest_commit.committed_at)
+                            latest_commit_project = Project.query.get(proj.latest_commit_id)
+                            if latest_commit_project:
+                                project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                    
+                    # Check working copy time
                     wc = user.get_working_copy(proj.id)
                     project_data['has_working_copy'] = wc is not None
                     if wc:
                         project_data['working_copy_id'] = wc.project_id
                         project_data['working_copy_has_changes'] = wc.has_changes
+                        last_edited_at = max(last_edited_at, wc.updated_at)
                     
-                    # Get thumbnail from latest commit
-                    if proj.latest_commit_id:
-                        latest_commit_project = Project.query.get(proj.latest_commit_id)
-                        if latest_commit_project:
-                            project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                    project_data['last_edited_at'] = last_edited_at.isoformat()
                     
                     # Get permissions (for display)
                     all_users_with_access = proj.get_all_users_with_access()
                     project_data['collaborator_count'] = len(all_users_with_access)
                     
                     collaboration_projects.append(project_data)
+        
+        # Sort by last_edited_at descending (most recent first)
+        collaboration_projects.sort(key=lambda p: p['last_edited_at'], reverse=True)
         
         return jsonify({
             'projects': collaboration_projects,
@@ -724,6 +756,7 @@ def get_shared_projects(user_info):
     """
     Get projects shared with user (READ permission only, not owner)
     ✅ Uses permission system
+    ✅ Sorted by last edited time (last commit)
     """
     try:
         user = User.query.get(user_info.get('user_id'))
@@ -743,9 +776,19 @@ def get_shared_projects(user_info):
                 if permission == PermissionLevel.READ:
                     access_via = user._get_access_via(proj)
                     
-                    # Get thumbnail
+                    # Calculate last_edited_at from latest commit
+                    last_edited_at = proj.created_at  # Default to creation time
+                    
+                    # Get thumbnail and last commit time
                     thumbnail_url = None
                     if proj.latest_commit_id:
+                        latest_commit = Commit.query.filter_by(
+                            collaborative_project_id=proj.id
+                        ).order_by(Commit.committed_at.desc()).first()
+                        
+                        if latest_commit:
+                            last_edited_at = max(last_edited_at, latest_commit.committed_at)
+                        
                         latest_project = Project.query.get(proj.latest_commit_id)
                         if latest_project:
                             thumbnail_url = latest_project.thumbnail_url
@@ -757,6 +800,7 @@ def get_shared_projects(user_info):
                         'description': proj.description,
                         'created_at': proj.created_at.isoformat(),
                         'updated_at': proj.updated_at.isoformat(),
+                        'last_edited_at': last_edited_at.isoformat(),
                         'thumbnail_url': thumbnail_url,
                         'latest_commit_id': proj.latest_commit_id,
                         'owner': {
@@ -767,6 +811,9 @@ def get_shared_projects(user_info):
                         'access_via': access_via,
                         'is_collaborative': True
                     })
+        
+        # Sort by last_edited_at descending (most recent first)
+        shared_projects.sort(key=lambda p: p['last_edited_at'], reverse=True)
         
         return jsonify({
             'projects': shared_projects,

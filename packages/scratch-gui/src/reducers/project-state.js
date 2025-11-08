@@ -254,17 +254,6 @@ const reducer = function (state, action) {
                     lastAutoSave: null // Reset lastAutoSave when projectId changes
                 });
             }
-        } else if (state.loadingState === LoadingState.NOT_LOADED) {
-            // if we're in NOT_LOADED state and setting a project ID, it means a project was loaded
-            // outside the normal Redux flow (e.g., via project-management.js). Don't fetch - just
-            // update the state to reflect that we're showing a project.
-            if (action.projectId !== defaultProjectId && action.projectId !== null) {
-                return Object.assign({}, state, {
-                    loadingState: LoadingState.SHOWING_WITH_ID,
-                    projectId: action.projectId,
-                    lastAutoSave: null // Reset lastAutoSave when projectId changes
-                });
-            }
         } else { // allow any other states to transition to fetching project
             // if setting the default project id, specifically fetch that project
             if (action.projectId === defaultProjectId || action.projectId === null) {
