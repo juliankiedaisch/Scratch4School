@@ -202,7 +202,7 @@ def migrate_postgres_to_new_postgres():
                             collaborative_project_id INTEGER NOT NULL REFERENCES collaborative_projects(id) ON DELETE CASCADE,
                             user_id VARCHAR(128) REFERENCES users(id),
                             group_id INTEGER REFERENCES groups(id),
-                            permission permissionlevel NOT NULL DEFAULT 'read',
+                            permission permissionlevel NOT NULL DEFAULT 'READ',
                             granted_by VARCHAR(128) REFERENCES users(id),
                             granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             CHECK (
