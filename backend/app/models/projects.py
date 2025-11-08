@@ -4,9 +4,9 @@ import uuid
 from enum import Enum
 
 class PermissionLevel(str, Enum):
-    ADMIN = 'admin'
-    WRITE = 'write'
-    READ = 'read'
+    ADMIN = 'ADMIN'
+    WRITE = 'WRITE'
+    READ = 'READ'
 
 
 # ============================================================

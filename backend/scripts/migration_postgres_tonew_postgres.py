@@ -192,7 +192,7 @@ def migrate_postgres_to_new_postgres():
                 with db.engine.connect() as conn:
                     # Create enum type
                     conn.execute(text("""
-                        CREATE TYPE permissionlevel AS ENUM ('admin', 'write', 'read')
+                        CREATE TYPE permissionlevel AS ENUM ('ADMIN', 'WRITE', 'READ')
                     """))
                     
                     # Create permissions table

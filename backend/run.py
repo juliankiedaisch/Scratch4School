@@ -71,7 +71,7 @@ def run_migrations():
                     if not result.scalar():
                         print("📝 Creating permissionlevel enum...")
                         conn.execute(text("""
-                            CREATE TYPE permissionlevel AS ENUM ('admin', 'write', 'read')
+                            CREATE TYPE permissionlevel AS ENUM ('ADMIN', 'WRITE', 'READ')
                         """))
                         conn.commit()
                         print("✅ Enum created")
