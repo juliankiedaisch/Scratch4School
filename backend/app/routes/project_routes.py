@@ -1,4 +1,11 @@
-from app.models.projects import Project, project_groups
+from app.models.projects import (
+    Project, 
+    CollaborativeProject, 
+    Commit, 
+    WorkingCopy,
+    CollaborativeProjectPermission,
+    PermissionLevel
+)
 from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
@@ -11,7 +18,10 @@ from werkzeug.utils import secure_filename
 
 projects_bp = Blueprint('projects', __name__)
 
-# Route to check if user can save (for the frontend)
+# ============================================================
+# BASIC PROJECT ENDPOINTS
+# ============================================================
+
 @projects_bp.route('/can-save', methods=['GET'])
 @check_auth
 def can_save():
@@ -22,294 +32,448 @@ def can_save():
         'username': request.user.username if g.user_authenticated else None
     })
 
+
 @projects_bp.route('', methods=['POST'])
 @require_auth
 def create_project(user_info):
-    """Create a new project for the authenticated user"""
+    """
+    Create a new project
+    ✅ Automatically creates CollaborativeProject with initial commit
+    ✅ Owner gets ADMIN permission automatically
+    """
     try:
-        # Get query parameters
-        title = request.args.get('title', 'Untitled Project')
-    
+        data = request.form
         
-        # Check if we have a project file in the request
-        if 'project_file' in request.files:
-            project_file = request.files['project_file']
-            
-            if project_file.filename == '':
-                return jsonify({'error': 'No file selected'}), 400
-
-            # Create new project record
-            project = Project(
-                name=title,
-                description=f"Created on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
-                owner_id=user_info.get("user_id"),
-                is_published=False
-            )
-            db.session.add(project)
-            db.session.flush()
-            
-            # Store the SB3 file with error handling
-            file_path = None
-            thumbnail_path = None
-            try:
-                # Store as binary file
-                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
-                os.makedirs(upload_folder, exist_ok=True)
-                # Generate a secure filename with timestamp
-                filename = secure_filename(f"{project.id}_{user_info.get('user_id')}.sb3")
-                file_path = os.path.join(upload_folder, filename)
-                project_file.save(file_path)
-                
-                # Handle thumbnail if provided
-                thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
-                if 'thumbnail' in request.files:
-                    thumbnail_file = request.files['thumbnail']
-                    if thumbnail_file.filename != '':
-                        # Save thumbnail
-                        thumbnail_filename = secure_filename(f"thumb_{user_info.get('user_id')}_{project.id}.png")
-                        thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
-                        thumbnail_file.save(thumbnail_path)
-
-                project.sb3_file_path = file_path  # Store the file path
-                project.thumbnail_path = thumbnail_path
-
-                db.session.commit()
-            except Exception as file_error:
-                # Rollback database changes
-                db.session.rollback()
-                # Delete any created files
-                if file_path and os.path.exists(file_path):
-                    try:
-                        os.remove(file_path)
-                    except OSError:
-                        pass
-                if thumbnail_path and os.path.exists(thumbnail_path):
-                    try:
-                        os.remove(thumbnail_path)
-                    except OSError:
-                        pass
-                raise file_error
-            current_app.logger.info(f"Project created: {project.id} by {user_info.get('username')}")
-            
-            # Return the project info
-            return jsonify({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'success': True
-            }), 200
-            
-        # If no project file was uploaded, check if we have JSON content
-        elif request.json:
-            # Create new project with JSON content
-            project = Project(
-                name=title,
-                description=f"Created on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
-                owner_id=user_info.user_id,
-                is_published=False
-            )
-            
-            db.session.add(project)
-            db.session.commit()
-            
-            current_app.logger.info(f"Project created (JSON): {project.id} by {user_info.get('username')}")
-            
-            # Return the project info
-            return jsonify({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'success': True
-            }), 200
-            
-        else:
-            # Neither file nor JSON content provided
-            return jsonify({'error': 'No project content provided'}), 400
-            
+        name = data.get('name', 'Untitled Project')
+        description = data.get('description', '')
+        
+        if 'project_file' not in request.files:
+            return jsonify({'error': 'No project file provided'}), 400
+        
+        project_file = request.files['project_file']
+        thumbnail_file = request.files.get('thumbnail')
+        
+        # ============================================================
+        # CREATE COLLABORATIVE PROJECT
+        # ============================================================
+        
+        collab_project = CollaborativeProject(
+            name=name,
+            description=description,
+            created_by=user_info['user_id']
+        )
+        db.session.add(collab_project)
+        db.session.flush()
+        
+        # ============================================================
+        # CREATE FIRST COMMIT
+        # ============================================================
+        
+        initial_project = Project(
+            name=f"{name} - Commit 1",
+            description="Projekt erstellt",
+            owner_id=user_info['user_id']
+        )
+        db.session.add(initial_project)
+        db.session.flush()
+        
+        # Save files
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        filename = secure_filename(f"{initial_project.id}_{user_info['user_id']}.sb3")
+        file_path = os.path.join(upload_folder, filename)
+        project_file.save(file_path)
+        initial_project.sb3_file_path = file_path
+        
+        if thumbnail_file:
+            thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
+            os.makedirs(thumbnail_folder, exist_ok=True)
+            thumbnail_filename = secure_filename(f"thumb_{initial_project.id}.png")
+            thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
+            thumbnail_file.save(thumbnail_path)
+            initial_project.thumbnail_path = thumbnail_path
+        
+        # Create initial commit
+        commit = Commit(
+            project_id=initial_project.id,
+            collaborative_project_id=collab_project.id,
+            commit_number=1,
+            commit_message="Projekt erstellt",
+            committed_by=user_info['user_id']
+        )
+        db.session.add(commit)
+        
+        # Set latest commit
+        collab_project.latest_commit_id = initial_project.id
+        
+        db.session.commit()
+        
+        current_app.logger.info(
+            f"New project created: CollaborativeProject {collab_project.id} by user {user_info['user_id']}"
+        )
+        
+        return jsonify({
+            'id': initial_project.id,  # Return project ID for frontend compatibility
+            'collaborative_project': collab_project.to_dict(),
+            'initial_commit': commit.to_dict(),
+            'success': True
+        }), 201
+        
     except Exception as e:
         current_app.logger.error(f"Error creating project: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@projects_bp.route('/<project_id>', methods=['PUT'])
+
+@projects_bp.route('/<int:project_id>', methods=['PUT'])
 @require_auth
 def update_project(user_info, project_id):
-    """Update an existing project"""
+    """
+    Update/save a project
+    ✅ Uses permission system
+    ✅ Handles both working copies and commits
+    
+    If project_id is a working copy: save directly
+    If project_id is a commit: create new working copy and save to it
+    """
     try:
-        # Get query parameters
         title = request.args.get('title')
-        
-        # Get the current user from request
         user = User.query.get(user_info.get('user_id'))
         
-        # Find the project with row-level lock
         project = Project.query.filter_by(id=project_id).with_for_update().first()
         if not project:
             return jsonify({'error': 'Project not found'}), 404
-            
-        # Check ownership
-        if project.owner_id != user.id:
-            return jsonify({'error': 'You do not have permission to update this project'}), 403
         
-        # Check if we have a project file in the request
-        if 'project_file' in request.files:
-            project_file = request.files['project_file']
+        # ============================================================
+        # DETERMINE PROJECT TYPE AND COLLABORATIVE PROJECT
+        # ============================================================
+        
+        collab_project = None
+        wc = None  # Initialize working copy variable
+        
+        # Check if this is a working copy
+        if project.is_working_copy:
+            wc = project.working_copy_info
             
-            if project_file.filename == '':
-                return jsonify({'error': 'No file selected'}), 400
+            # Check if user owns this working copy
+            if wc.user_id != user.id:
+                return jsonify({'error': 'You can only update your own working copies'}), 403
             
-            # Store the SB3 file
-            # Generate a secure filename with timestamp
-            filename = secure_filename(f"{project.id}_{user_info.get('user_id')}.sb3")
-            upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            project_file.save(file_path)
-
-            # Handle thumbnail if provided
-            if 'thumbnail' in request.files:
-                thumbnail_file = request.files['thumbnail']
+            collab_project = wc.collaborative_project
+            
+        # Check if this is a commit
+        elif project.is_commit:
+            commit = project.commit_info
+            collab_project = commit.collaborative_project
+            
+            # Check if user has write permission on the collaborative project
+            if not collab_project.has_permission(user, PermissionLevel.WRITE):
+                return jsonify({'error': 'You need write permission to save this project'}), 403
+            
+            # ============================================================
+            # CREATE NEW WORKING COPY FROM COMMIT
+            # ============================================================
+            
+            current_app.logger.info(
+                f"User {user.id} attempting to save commit {project_id}, creating working copy"
+            )
+            
+            # Check if user already has a working copy for this collaborative project
+            existing_wc = user.get_working_copy(collab_project.id)
+            
+            if existing_wc:
+                # User already has a working copy, use it instead
+                project = Project.query.get(existing_wc.project_id)
+                wc = existing_wc
+                current_app.logger.info(
+                    f"User already has working copy {project.id} for collab project {collab_project.id}"
+                )
+            else:
+                # Create new working copy from the commit
+                new_wc_project = Project(
+                    name=f"{collab_project.name} - Working Copy",
+                    description="Working copy",
+                    owner_id=user.id
+                )
+                db.session.add(new_wc_project)
+                db.session.flush()
+                
+                # Copy files from commit to new working copy
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                if project.sb3_file_path and os.path.exists(project.sb3_file_path):
+                    filename = secure_filename(f"{new_wc_project.id}_{user.id}.sb3")
+                    file_path = os.path.join(upload_folder, filename)
+                    shutil.copy2(project.sb3_file_path, file_path)
+                    new_wc_project.sb3_file_path = file_path
+                
+                if project.thumbnail_path and os.path.exists(project.thumbnail_path):
+                    thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
+                    os.makedirs(thumbnail_folder, exist_ok=True)
+                    thumbnail_filename = secure_filename(f"thumb_{new_wc_project.id}.png")
+                    thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
+                    shutil.copy2(project.thumbnail_path, thumbnail_path)
+                    new_wc_project.thumbnail_path = thumbnail_path
+                
+                # Create WorkingCopy entry
+                wc = WorkingCopy(
+                    project_id=new_wc_project.id,
+                    collaborative_project_id=collab_project.id,
+                    user_id=user.id,
+                    based_on_commit_id=project_id,
+                    has_changes=False
+                )
+                db.session.add(wc)
+                db.session.flush()
+                
+                # Switch to the new working copy project for saving
+                project = new_wc_project
+                
+                current_app.logger.info(
+                    f"Created new working copy {project.id} from commit {project_id}"
+                )
+        
+        else:
+            # Not a working copy or commit - this shouldn't happen
+            return jsonify({'error': 'Project is neither a working copy nor a commit'}), 400
+        
+        # Verify user has write permission on the collaborative project
+        if not collab_project.has_permission(user, PermissionLevel.WRITE):
+            return jsonify({'error': 'You need write permission to update this project'}), 403
+        
+        if 'project_file' not in request.files:
+            return jsonify({'error': 'No project file provided'}), 400
+        
+        project_file = request.files['project_file']
+        if project_file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Save file (overwrite)
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Delete old file
+        if project.sb3_file_path and os.path.exists(project.sb3_file_path):
+            try:
+                os.remove(project.sb3_file_path)
+            except OSError:
+                pass
+        
+        # Save new file
+        filename = secure_filename(f"{project.id}_{user_info.get('user_id')}.sb3")
+        file_path = os.path.join(upload_folder, filename)
+        project_file.save(file_path)
+        project.sb3_file_path = file_path
+        
+        # Update title if provided
+        if title:
+            project.name = title
+        
+        # Handle thumbnail
+        if 'thumbnail' in request.files:
+            thumbnail_file = request.files['thumbnail']
+            if thumbnail_file.filename != '':
                 thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
-
-                thumbnail_filename = secure_filename(f"thumb__{user_info.get('user_id')}_{project.id}.png")
+                os.makedirs(thumbnail_folder, exist_ok=True)
+                
+                if project.thumbnail_path and os.path.exists(project.thumbnail_path):
+                    try:
+                        os.remove(project.thumbnail_path)
+                    except OSError:
+                        pass
+                
+                thumbnail_filename = secure_filename(f"thumb_{user_info.get('user_id')}_{project.id}.png")
                 thumbnail_path = os.path.join(thumbnail_folder, thumbnail_filename)
                 thumbnail_file.save(thumbnail_path)
                 project.thumbnail_path = thumbnail_path
-
-
-            # Update project record
-            if title:
-                project.name = title
-            
-            project.sb3_file_path = file_path
-            project.updated_at = datetime.now(timezone.utc)
-            
-            db.session.commit()
-            
-            current_app.logger.info(f"Project updated with SB3 file: {project.id} by {user.username}")
-            
-            # Return the project info
-            return jsonify({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'success': True
-
-            }), 200
-            
-        # If no project file was uploaded, check if we have JSON content
-        elif request.json:
-            # Update project with JSON content
-            if title:
-                project.name = title
-                
-            project.content = request.json
-            project.updated_at = datetime.now(timezone.utc)
-            
-            db.session.commit()
-            
-            current_app.logger.info(f"Project updated with JSON: {project.id} by {user.username}")
-            
-            # Return the project info
-            return jsonify({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'success': True
-            }), 200
-            
-        else:
-            # Neither file nor JSON content provided
-            return jsonify({'error': 'No project content provided'}), 400
-            
-    except Exception as e:
-        current_app.logger.error(f"Error updating project: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@projects_bp.route('/<project_id>/metadata', methods=['GET'])
-@require_auth
-def get_project(user_info, project_id):
-    """Get a specific project by ID"""
-    try:
-        # Get the current user from request
-        user = request.user
         
-        # Find the project
-        project = Project.query.get(project_id)
-        if not project:
-            return jsonify({'error': 'Project not found'}), 404
-            
-        # Check ownership or if project is shared with user's groups
-        is_owner = (project.owner_id == user.id)
-        is_shared = False
+        project.updated_at = datetime.now(timezone.utc)
+        wc.updated_at = datetime.now(timezone.utc)
+        wc.has_changes = True
         
-
-        shared_groups = [
-            {
-                'id': group.id,
-                'name': group.name,
-                'external_id': group.external_id
-            } for group in project.shared_groups
-            ]
-        print(f"Project {project.id} shared with groups: {shared_groups}")
-            
-        if not (is_owner or is_shared or user_info.get("role") =="admin" or user_info.get("role") == "teacher"):
-            return jsonify({'error': 'You do not have permission to view this project'}), 403
+        db.session.commit()
+        
+        current_app.logger.info(f"Working copy {project.id} updated by {user.username}")
         
         return jsonify({
             'id': project.id,
             'title': project.name,
-            'is_shared': is_shared,
             'description': project.description,
             'created_at': project.created_at.isoformat(),
             'updated_at': project.updated_at.isoformat(),
-            'success': True,
-            'is_published': project.is_published,
-            'shared_with_groups': shared_groups
+            'is_working_copy': True,
+            'has_changes': True,
+            'success': True
         }), 200
-
+        
     except Exception as e:
-        current_app.logger.error(f"Error retrieving project: {str(e)}")
+        current_app.logger.error(f"Error updating project: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@projects_bp.route('/<int:project_id>/metadata', methods=['GET'])
+@require_auth
+def get_project_metadata(user_info, project_id):
+    """
+    Get project metadata
+    ✅ Uses permission system
+    """
+    try:
+        user = User.query.get(user_info['user_id'])
+        project = Project.query.get(project_id)
+        
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        has_access = False
+        access_reason = None
+        permission_level = None
+        collaborative_project = None
+        
+        # Get collaborative project
+        if project.is_commit and project.commit_info:
+            collaborative_project = project.commit_info.collaborative_project
+        elif project.is_working_copy and project.working_copy_info:
+            collaborative_project = project.working_copy_info.collaborative_project
+        
+        if not collaborative_project:
+            return jsonify({'error': 'Project has no collaborative project'}), 404
+        
+        # Check permission
+        permission_level = collaborative_project.get_user_permission(user)
+        
+        if permission_level:
+            has_access = True
+            
+            # Determine access reason
+            if collaborative_project.created_by == user.id:
+                access_reason = 'owner'
+            else:
+                access_via = user._get_access_via(collaborative_project)
+                if access_via == 'direct':
+                    access_reason = 'direct_permission'
+                elif access_via and access_via.startswith('group:'):
+                    access_reason = 'group_permission'
+        
+        # Working copy owner check
+        if project.is_working_copy:
+            wc = project.working_copy_info
+            if wc.user_id != user.id:
+                # Can't access other people's working copies
+                has_access = False
+                access_reason = None
+            else:
+                access_reason = 'working_copy_owner'
+        
+        if not has_access and user.role not in ['admin', 'teacher']:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Build response
+        # Note: title comes from CollaborativeProject, not Project (Project.name is deprecated)
+        response = {
+            'id': project.id,
+            'title': collaborative_project.name,
+            'description': collaborative_project.description,
+            'owner': {
+                'id': project.owner.id,
+                'username': project.owner.username
+            },
+            'is_collaborative': True,
+            'is_commit': project.is_commit,
+            'is_working_copy': project.is_working_copy,
+            'access_reason': access_reason,
+            'permission_level': permission_level.value if permission_level else None,
+            'can_edit': permission_level in [PermissionLevel.ADMIN, PermissionLevel.WRITE] and project.is_working_copy,
+            'is_read_only': permission_level == PermissionLevel.READ or project.is_commit,
+            'collaborative_project': {
+                'id': collaborative_project.id,
+                'name': collaborative_project.name,
+                'description': collaborative_project.description,
+                'created_by': collaborative_project.creator.username if collaborative_project.creator else None,
+                'latest_commit_id': collaborative_project.latest_commit_id
+            },
+            'success': True
+        }
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting metadata: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
 
 @projects_bp.route('/<project_id>/download', methods=['GET'])
 @require_auth
 def download_project(user_info, project_id):
-    """Download a project as an SB3 file"""
+    """
+    Download a project SB3 file
+    ✅ Uses permission system
+    """
     try:
-        # Get the current user from request
+
+        if project_id == "0" or project_id == 0:
+            filename = "newProject.sb3"
+            file_path = os.path.join(current_app.config['ASSET_FOLDER'], filename)
+            
+            return send_file(
+                file_path,
+                mimetype='application/octet-stream',
+                as_attachment=True,
+                download_name=filename
+            )
+
         user = User.query.get(user_info.get('user_id'))
-        # Find the project
         project = Project.query.get(project_id)
+        
         if not project:
             return jsonify({'error': 'Project not found'}), 404
-            
-        # Check ownership or shared permissions
-        is_owner = (project.owner_id == user_info.get('user_id'))
-        is_shared = False
         
-        if not is_owner and project.is_published:
-            user_group_ids = [g.id for g in user.groups]
-            project_group_ids = [g.id for g in project.shared_groups]
-            
-            is_shared = any(group_id in user_group_ids for group_id in project_group_ids)
-            
-        if not (is_owner or is_shared or user_info.get("role") =="admin" or user_info.get("role") == "teacher"):
-            return jsonify({'error': 'You do not have permission to download this project'}), 403
+        collaborative_project = None
         
-        # Check if the project has an SB3 file
+        if project.is_commit and project.commit_info:
+            collaborative_project = project.commit_info.collaborative_project
+        elif project.is_working_copy and project.working_copy_info:
+            collaborative_project = project.working_copy_info.collaborative_project
+        
+        if not collaborative_project:
+            return jsonify({'error': 'Project has no collaborative project'}), 404
+        
+        # Check permission
+        has_access = False
+        
+        # Check permission level (any level allows download)
+        if collaborative_project.get_user_permission(user) and user.role not in ['admin', 'teacher']:
+            has_access = True
+            
+            # Additional check for working copies
+            if project.is_working_copy:
+                wc = project.working_copy_info
+                if wc.user_id != user.id:
+                    has_access = False
+                    current_app.logger.warning(
+                        f"User {user.id} tried to download working copy {project_id} "
+                        f"owned by user {wc.user_id}"
+                    )
+        
+        if not has_access and user.role not in ['admin', 'teacher']:
+            current_app.logger.warning(
+                f"Download access denied for user {user.id} to project {project_id}"
+            )
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Send file
         if project.sb3_file_path and os.path.exists(project.sb3_file_path):
-            # Serve the SB3 file
             filename = f"{project.name.replace(' ', '_')}.sb3"
+            
             return send_file(
                 project.sb3_file_path,
                 mimetype='application/octet-stream',
@@ -317,408 +481,301 @@ def download_project(user_info, project_id):
                 download_name=filename
             )
         else:
-            return jsonify({'error': 'No project data available for download'}), 404
-                
+            return jsonify({'error': 'No project data available'}), 404
+        
     except Exception as e:
         current_app.logger.error(f"Error downloading project: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
 
 @projects_bp.route('/<project_id>/thumbnail', methods=['GET'])
 def get_project_thumbnail(project_id):
-    """Get a project's thumbnail image"""
+    """Get project thumbnail (public)"""
     try:
-        # Find the project
         project = Project.query.get(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
         
-        # Check if project has a thumbnail
-        if not project.thumbnail_path or not os.path.exists(project.thumbnail_path):
-            # Return a default thumbnail
-            thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
-            default_thumbnail = os.path.join(thumbnail_folder, 'default.png')
-            if os.path.exists(default_thumbnail):
-                return send_file(default_thumbnail, mimetype='image/png')
-            else:
-                return jsonify({'error': 'Thumbnail not found'}), 404
-        else:
-            print(f"No thumbnail for project {project_id}: {project.thumbnail_path}")
+        if project.thumbnail_path and os.path.exists(project.thumbnail_path):
+            return send_file(project.thumbnail_path, mimetype='image/png')
         
-        # Return the thumbnail image
-        return send_file(project.thumbnail_path, mimetype='image/png')
-            
+        # Return default thumbnail
+        thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
+        default_thumbnail = os.path.join(thumbnail_folder, 'default.png')
+        if os.path.exists(default_thumbnail):
+            return send_file(default_thumbnail, mimetype='image/png')
+        
+        return jsonify({'error': 'Thumbnail not found'}), 404
+        
     except Exception as e:
-        current_app.logger.error(f"Error retrieving thumbnail: {str(e)}")
+        current_app.logger.error(f"Error getting thumbnail: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@projects_bp.route('/recent', methods=['GET'])
+
+@projects_bp.route('/all-with-collaborative', methods=['GET'])
 @require_auth
-def get_recent_project(user_info):
-    """Get the user's most recent project"""
+def get_all_user_projects(user_info):
+    """
+    Get ALL user-accessible collaborative projects
+    ✅ Uses permission system
+    """
     try:
-        # Get the current user from request
-        user = request.user
+        user = User.query.get(user_info['user_id'])
         
-        # Find the most recent project for this user
-        # Order by updated_at descending and limit to 1
-        recent_project = Project.query.filter_by(owner_id=user.id) \
-                              .order_by(Project.updated_at.desc()) \
-                              .first()
+        # Get all accessible projects via permission system
+        accessible_projects = user.get_all_collaborative_projects()
         
-        if not recent_project:
-            return jsonify({'message': 'No projects found for this user'}), 404
+        projects_list = []
         
-        # Return the project metadata
-        return jsonify({
-            'project': {
-                'id': recent_project.id,
-                'title': recent_project.name,
-                'description': recent_project.description,
-                'created_at': recent_project.created_at.isoformat(),
-                'updated_at': recent_project.updated_at.isoformat(),
-                'success': True
+        for proj in accessible_projects:
+            # Get permission level
+            permission = proj.get_user_permission(user)
+            
+            project_data = {
+                'id': proj.id,
+                'name': proj.name,
+                'description': proj.description,
+                'created_by': proj.created_by,
+                'creator_username': proj.creator.username if proj.creator else None,
+                'created_at': proj.created_at.isoformat(),
+                'updated_at': proj.updated_at.isoformat(),
+                'latest_commit_id': proj.latest_commit_id,
+                'is_collaborative': True,
+                'permission': permission.value if permission else None,
+                'access_via': user._get_access_via(proj)
             }
-        }), 200
-
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving recent project: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-    
-@projects_bp.route('', methods=['GET'])
-@require_auth
-def get_all_projects(user_info):
-    print("Fetching all projects for user")
-    """Get all projects for the authenticated user"""
-    try:
-        # Find all projects for this user
-        projects = Project.query.filter_by(owner_id=user_info.get("user_id")) \
-                          .order_by(Project.updated_at.desc()) \
-                          .all()
+            
+            # Check for working copy
+            wc = user.get_working_copy(proj.id)
+            project_data['has_working_copy'] = wc is not None
+            if wc:
+                project_data['working_copy_id'] = wc.project_id
+                project_data['working_copy_has_changes'] = wc.has_changes
+            
+            # Get thumbnail from latest commit
+            if proj.latest_commit_id:
+                latest_commit_project = Project.query.get(proj.latest_commit_id)
+                if latest_commit_project:
+                    project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+            
+            # Get permissions (for display)
+            all_users_with_access = proj.get_all_users_with_access()
+            project_data['collaborator_count'] = len(all_users_with_access)
+            
+            projects_list.append(project_data)
         
-        # Format the projects as a list of dictionaries
-        project_list = []
-        for project in projects:
-            # Include shared groups information for THIS specific project
-            shared_groups = [
-                {
-                    'id': group.id,
-                    'name': group.name,
-                    'external_id': group.external_id
-                } for group in project.shared_groups
-            ]
-            
-            # Add this project with its specific shared groups
-            project_list.append({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'thumbnail_url': f'/backend/api/projects/{project.id}/thumbnail',
-                'is_published': project.is_published,
-                'shared_with_groups': shared_groups  # Now using the correct shared_groups for each project
-            })
-            
-            print(f"Project {project.id} shared with groups: {shared_groups}")
+        current_app.logger.info(
+            f"Loaded {len(projects_list)} projects for user {user.username}"
+        )
         
         return jsonify({
-            'projects': project_list,
-            'count': len(project_list),
+            'projects': projects_list,
+            'count': len(projects_list),
+            'success': True
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting all projects: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+@projects_bp.route('/owned', methods=['GET'])
+@require_auth
+def get_owned_projects(user_info):
+    """
+    Get projects owned by user (owner)
+    ✅ Uses permission system
+    """
+    try:
+        user = User.query.get(user_info.get('user_id'))
+        
+        all_projects = user.get_all_collaborative_projects()
+        
+        owned_projects = []
+        
+        for proj in all_projects:
+            # Only include if user is owner
+            if proj.created_by == user.id:
+                permission = proj.get_user_permission(user)
+                
+                project_data = {
+                    'id': proj.id,
+                    'name': proj.name,
+                    'description': proj.description,
+                    'created_by': proj.created_by,
+                    'creator_username': proj.creator.username if proj.creator else None,
+                    'created_at': proj.created_at.isoformat(),
+                    'updated_at': proj.updated_at.isoformat(),
+                    'latest_commit_id': proj.latest_commit_id,
+                    'is_collaborative': True,
+                    'permission': permission.value if permission else None,
+                    'access_via': 'owner'
+                }
+                
+                # Check for working copy
+                wc = user.get_working_copy(proj.id)
+                project_data['has_working_copy'] = wc is not None
+                if wc:
+                    project_data['working_copy_id'] = wc.project_id
+                    project_data['working_copy_has_changes'] = wc.has_changes
+                
+                # Get thumbnail from latest commit
+                if proj.latest_commit_id:
+                    latest_commit_project = Project.query.get(proj.latest_commit_id)
+                    if latest_commit_project:
+                        project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                
+                # Get permissions (for display)
+                all_users_with_access = proj.get_all_users_with_access()
+                project_data['collaborator_count'] = len(all_users_with_access)
+                
+                owned_projects.append(project_data)
+        
+        return jsonify({
+            'projects': owned_projects,
+            'count': len(owned_projects),
             'success': True
         }), 200
 
     except Exception as e:
-        current_app.logger.error(f"Error retrieving projects: {str(e)}")
+        current_app.logger.error(f"Error retrieving owned projects: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-    
 
-@projects_bp.route('/<project_id>', methods=['DELETE'])
+
+@projects_bp.route('/collaboration', methods=['GET'])
 @require_auth
-def delete_project(user_info, project_id):
-    """Delete a project"""
+def get_collaboration_projects(user_info):
+    """
+    Get projects where user has write or admin permission but is NOT owner
+    ✅ Uses permission system
+    """
     try:
-        # Get the current user from request
-        user = request.user
+        user = User.query.get(user_info.get('user_id'))
         
-        # Find the project with row-level lock
-        project = Project.query.filter_by(id=project_id).with_for_update().first()
-        if not project:
-            return jsonify({'error': 'Project not found'}), 404
-            
-        # Check ownership
-        if project.owner_id != user.id:
-            return jsonify({'error': 'You do not have permission to delete this project'}), 403
+        all_projects = user.get_all_collaborative_projects()
         
-        # Delete the project file if it exists
-        if project.sb3_file_path and os.path.exists(project.sb3_file_path):
-            try:
-                os.remove(project.sb3_file_path)
-                current_app.logger.info(f"Project file deleted: {project.sb3_file_path}")
-            except OSError as e:
-                current_app.logger.warning(f"Could not delete project file: {project.sb3_file_path}, {str(e)}")
-        # Delete the project thumbnail if it exists
-        if project.thumbnail_path and os.path.exists(project.thumbnail_path):
-            try:
-                os.remove(project.thumbnail_path)
-                current_app.logger.info(f"Project thumbnail deleted: {project.thumbnail_path}")
-            except OSError as e:
-                current_app.logger.warning(f"Could not delete project thumbnail: {project.thumbnail_path}, {str(e)}")
+        collaboration_projects = []
         
-        # Delete the project from the database
-        db.session.delete(project)
-        db.session.commit()
-        
-        current_app.logger.info(f"Project deleted: {project_id} by {user.username}")
+        for proj in all_projects:
+            # Only include if:
+            # 1. User is not owner
+            # 2. User has write or admin permission
+            if proj.created_by != user.id:
+                permission = proj.get_user_permission(user)
+                
+                if permission and permission in [PermissionLevel.WRITE, PermissionLevel.ADMIN]:
+                    access_via = user._get_access_via(proj)
+                    
+                    project_data = {
+                        'id': proj.id,
+                        'name': proj.name,
+                        'description': proj.description,
+                        'created_by': proj.created_by,
+                        'creator_username': proj.creator.username if proj.creator else None,
+                        'created_at': proj.created_at.isoformat(),
+                        'updated_at': proj.updated_at.isoformat(),
+                        'latest_commit_id': proj.latest_commit_id,
+                        'is_collaborative': True,
+                        'permission': permission.value,
+                        'access_via': access_via
+                    }
+                    
+                    # Check for working copy
+                    wc = user.get_working_copy(proj.id)
+                    project_data['has_working_copy'] = wc is not None
+                    if wc:
+                        project_data['working_copy_id'] = wc.project_id
+                        project_data['working_copy_has_changes'] = wc.has_changes
+                    
+                    # Get thumbnail from latest commit
+                    if proj.latest_commit_id:
+                        latest_commit_project = Project.query.get(proj.latest_commit_id)
+                        if latest_commit_project:
+                            project_data['thumbnail_url'] = latest_commit_project.thumbnail_url
+                    
+                    # Get permissions (for display)
+                    all_users_with_access = proj.get_all_users_with_access()
+                    project_data['collaborator_count'] = len(all_users_with_access)
+                    
+                    collaboration_projects.append(project_data)
         
         return jsonify({
-            'success': True,
-            'message': 'Project successfully deleted',
-            'id': project_id
+            'projects': collaboration_projects,
+            'count': len(collaboration_projects),
+            'success': True
         }), 200
-            
+
     except Exception as e:
-        current_app.logger.error(f"Error deleting project: {str(e)}")
-        db.session.rollback()
+        current_app.logger.error(f"Error retrieving collaboration projects: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-    
-@projects_bp.route('/<int:project_id>/share', methods=['POST'])
-@require_auth
-def share_project_with_groups(user_info, project_id):
-    """Share a project with specified groups"""
-    try:
-        # Get the project with row-level lock
-        project = Project.query.filter_by(id=project_id).with_for_update().first()
-        if not project:
-            return jsonify({'error': 'Project not found'}), 404
-            
-        # Check if user is the project owner
-        if project.owner_id != user_info['user_id']:
-            return jsonify({'error': 'You can only share projects that you own'}), 403
-            
-        # Get request data
-        data = request.get_json()
-        if not data or 'group_ids' not in data:
-            return jsonify({'error': 'Missing group_ids parameter'}), 400
-            
-        # Get group IDs from request
-        group_ids = data['group_ids']
-        if group_ids:
-            project.is_published = True
-        else:
-            project.is_published = False
-        
-        # Clear existing group associations
-        project.shared_groups = []
-        db.session.flush()
-        
-        # Add new group associations
-        if group_ids and len(group_ids) > 0:
-            # Verify that user is a member of these groups
-            user = User.query.get(user_info['user_id'])
-            user_groups = [g.id for g in user.groups]
-            
-            # Filter to only include groups the user is a member of
-            valid_group_ids = [gid for gid in group_ids if gid in user_groups]
-            
-            # Add groups to project's shared_groups
-            if valid_group_ids:
-                groups = Group.query.filter(Group.id.in_(valid_group_ids)).all()
-                project.shared_groups = groups
-        
-        # Update project
-        project.updated_at = datetime.now(timezone.utc)
-        db.session.commit()
-        
-        # Return updated project info
-        result = {
-            'id': project.id,
-            'title': project.name,
-            'shared_with_groups': [
-                {
-                    'id': group.id,
-                    'name': group.name,
-                    'external_id': group.external_id
-                } for group in project.shared_groups
-            ]
-        }
-        
-        return jsonify(result), 200
-        
-    except Exception as e:
-        current_app.logger.error(f"Error sharing project: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+
 
 @projects_bp.route('/shared', methods=['GET'])
 @require_auth
 def get_shared_projects(user_info):
-    """Get all projects shared with the authenticated user via groups"""
+    """
+    Get projects shared with user (READ permission only, not owner)
+    ✅ Uses permission system
+    """
     try:
-        # Get the current user
         user = User.query.get(user_info.get('user_id'))
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-            
-        # Get all groups the user is a member of
-        user_groups = user.groups
-        if not user_groups:
-            return jsonify({
-                'projects': [],
-                'count': 0,
-                'success': True
-            }), 200
-            
-        # Get IDs of all the user's groups
-        user_group_ids = [group.id for group in user_groups]
         
-        # Find projects shared with any of these groups
-        # We need to use a more complex query to get projects shared with the user's groups
-        # that aren't owned by the user
-        shared_projects = (Project.query
-            .join(project_groups, Project.id == project_groups.c.project_id)
-            .filter(project_groups.c.group_id.in_(user_group_ids))
-            .filter(Project.owner_id != user.id)  # Exclude projects owned by the user
-            .filter(Project.is_published == True)  # Only include published projects
-            .order_by(Project.updated_at.desc())
-            .distinct()
-            .all())
+        # Get projects where user has READ permission via groups
+        all_projects = user.get_all_collaborative_projects()
         
-        # Format projects for response
-        project_list = []
-        for project in shared_projects:
-            # Get owner information
-            owner = User.query.get(project.owner_id)
-            owner_info = {
-                'id': owner.id,
-                'username': owner.username
-            } if owner else {'id': None, 'username': 'Unknown'}
-            
-            # Include shared groups information
-            shared_groups = [
-                {
-                    'id': group.id,
-                    'name': group.name,
-                    'external_id': group.external_id
-                } for group in project.shared_groups if group.id in user_group_ids
-            ]
-            
-            project_list.append({
-                'id': project.id,
-                'title': project.name,
-                'description': project.description,
-                'created_at': project.created_at.isoformat(),
-                'updated_at': project.updated_at.isoformat(),
-                'thumbnail_url': f'/backend/api/projects/{project.id}/thumbnail',
-                'owner': owner_info,
-                'is_published': project.is_published,
-                'shared_with_groups': shared_groups
-            })
+        shared_projects = []
         
-        current_app.logger.info(f"Found {len(project_list)} projects shared with user {user.id}")
+        for proj in all_projects:
+            # Only include if:
+            # 1. User is not owner
+            # 2. User has READ permission only
+            if proj.created_by != user.id:
+                permission = proj.get_user_permission(user)
+                
+                if permission == PermissionLevel.READ:
+                    access_via = user._get_access_via(proj)
+                    
+                    # Get thumbnail
+                    thumbnail_url = None
+                    if proj.latest_commit_id:
+                        latest_project = Project.query.get(proj.latest_commit_id)
+                        if latest_project:
+                            thumbnail_url = latest_project.thumbnail_url
+                    
+                    shared_projects.append({
+                        'id': proj.id,
+                        'name': proj.name,
+                        'title': proj.name,  # Alias for backwards compatibility
+                        'description': proj.description,
+                        'created_at': proj.created_at.isoformat(),
+                        'updated_at': proj.updated_at.isoformat(),
+                        'thumbnail_url': thumbnail_url,
+                        'latest_commit_id': proj.latest_commit_id,
+                        'owner': {
+                            'id': proj.creator.id,
+                            'username': proj.creator.username
+                        } if proj.creator else None,
+                        'permission': permission.value,
+                        'access_via': access_via,
+                        'is_collaborative': True
+                    })
         
         return jsonify({
-            'projects': project_list,
-            'count': len(project_list),
+            'projects': shared_projects,
+            'count': len(shared_projects),
             'success': True
         }), 200
 
     except Exception as e:
         current_app.logger.error(f"Error retrieving shared projects: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-    
-@projects_bp.route('/<int:project_id>/copy', methods=['POST'])
-@require_auth
-def copy_project(user_info, project_id):
-    """Create a copy of an existing project for the authenticated user"""
-    try:
-        # Get the original project with shared read lock
-        original_project = Project.query.filter_by(id=project_id).with_for_update(read=True).first()
-        if not original_project:
-            return jsonify({'error': 'Project not found'}), 404
-            
-        # Check if user has access to the project
-        current_user = User.query.get(user_info.get('user_id'))
-        if not current_user:
-            return jsonify({'error': 'User not found'}), 404
-            
-        # Check if user can access this project
-        can_access = False
-        
-        # User owns the project
-        if original_project.owner_id == current_user.id:
-            can_access = True
-        
-        # Project is shared with user's groups
-        if not can_access and original_project.is_published:
-            user_group_ids = {group.id for group in current_user.groups}
-            project_group_ids = {group.id for group in original_project.shared_groups}
-            
-            if user_group_ids.intersection(project_group_ids):
-                can_access = True
-        
-        if not can_access:
-            return jsonify({'error': 'You do not have permission to copy this project'}), 403
-        
-        # Create a new project record
-        new_project = Project(
-            name=f"Copy of {original_project.name}",
-            description=original_project.description,
-            owner_id=current_user.id,
-            is_published=False  # New copies are not published by default
-        )
-        
-        db.session.add(new_project)
-        db.session.flush()  # Get ID without committing
-        
-        # Copy the project file if it exists
-        if original_project.sb3_file_path:
-            # Create paths
-            upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
-            os.makedirs(upload_folder, exist_ok=True)
-            # Generate a secure filename with timestamp
-            new_filename = secure_filename(f"{new_project.id}_{current_user.id}.sb3")
-            # Generate a new filename
-            new_file_path = os.path.join(upload_folder, new_filename)
-            
-            # Copy the file
-            shutil.copy2(original_project.sb3_file_path, new_file_path)
-            new_project.sb3_file_path = new_file_path
-        
-        # Copy the thumbnail if it exists
-        if original_project.thumbnail_path and os.path.exists(original_project.thumbnail_path):
-            # Create paths
-            thumbnail_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'thumbnails')
-            os.makedirs(thumbnail_folder, exist_ok=True)
-            
-            # Generate a new filename
-            new_thumbnail_name = secure_filename(f"thumb_{current_user.id}_{new_project.id}.png")
-            new_thumbnail_path = os.path.join(thumbnail_folder, new_thumbnail_name)
-            
-            # Copy the thumbnail
-            shutil.copy2(original_project.thumbnail_path, new_thumbnail_path)
-            new_project.thumbnail_path = new_thumbnail_path
-        
-        # Set timestamps
-        new_project.created_at = datetime.now(timezone.utc)
-        new_project.updated_at = datetime.now(timezone.utc)
-        
-        # Commit to the database
-        db.session.commit()
-        
-        current_app.logger.info(f"Project {project_id} copied to new project {new_project.id} by user {current_user.id}")
-        
-        # Return the new project data
-        return jsonify({
-            'id': new_project.id,
-            'title': new_project.name,
-            'description': new_project.description,
-            'created_at': new_project.created_at.isoformat(),
-            'updated_at': new_project.updated_at.isoformat(),
-            'thumbnail_url': f'/backend/api/projects/{new_project.id}/thumbnail',
-            'success': True
-        }), 201
-        
-    except Exception as e:
-        current_app.logger.error(f"Error copying project: {str(e)}")
-        db.session.rollback()
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500

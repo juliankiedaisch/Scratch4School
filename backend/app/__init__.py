@@ -62,12 +62,20 @@ def create_app(debug=False):
     
     # File upload configuration
     app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads')
+    app.config['ASSET_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
     
     # Create upload folders if they don't exist
     os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails'), exist_ok=True)
     os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'costume'), exist_ok=True)
     os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'sound'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'sprite'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'script'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnail'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'projects'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'versions'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'working_copies'), exist_ok=True)
+
     
     # Register blueprints
     from app.routes.auth_routes import auth_bp
@@ -76,11 +84,13 @@ def create_app(debug=False):
     from app.routes.asset_routes import assets_bp
     from app.routes.teacher_routes import teacher_bp
     from app.routes.backpack_routes import backpack_bp
+    from app.routes.collaboration_routes import collaboration_bp
     app.register_blueprint(backpack_bp, url_prefix='/api/backpack')
     app.register_blueprint(auth_bp, url_prefix='/')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(projects_bp, url_prefix='/api/projects')
     app.register_blueprint(assets_bp, url_prefix='/api/assets')
+    app.register_blueprint(collaboration_bp, url_prefix='/api/collaboration')
     app.register_blueprint(teacher_bp, url_prefix='/api/teacher')
     
 

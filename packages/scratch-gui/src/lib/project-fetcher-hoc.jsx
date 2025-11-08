@@ -4,6 +4,7 @@ import {injectIntl} from 'react-intl';
 import intlShape from './intlShape';
 import bindAll from 'lodash.bindall';
 import {connect} from 'react-redux';
+import VM from '@scratch/scratch-vm';
 
 import {setProjectUnchanged} from '../reducers/project-changed';
 import {
@@ -23,6 +24,7 @@ import {
 
 import log from './log';
 import {GUIStoragePropType} from '../gui-config';
+import * as ProjectManager from './project-management';
 
 /* Higher Order Component to provide behavior for loading projects by id. If
  * there's no id, the default project is loaded.
@@ -83,24 +85,28 @@ const ProjectFetcherHOC = function (WrappedComponent) {
                 this.props.onActivateTab(BLOCKS_TAB_INDEX);
             }
         }
-        fetchProject (projectId, loadingState) {
-            const storage = this.props.storage.scratchStorage;
+        async fetchProject (projectId, loadingState) {
+            if (!this.props.vm) {
+                const error = new Error('VM not available');
+                this.props.onError(error);
+                log.error(error);
+                return;
+            }
 
-            return storage
-                .load(storage.AssetType.Project, projectId, storage.DataFormat.JSON)
-                .then(projectAsset => {
-                    if (projectAsset) {
-                        this.props.onFetchedProjectData(projectAsset.data, loadingState);
-                    } else {
-                        // Treat failure to load as an error
-                        // Throw to be caught by catch later on
-                        throw new Error('Could not find project');
-                    }
-                })
-                .catch(err => {
-                    this.props.onError(err);
-                    log.error(err);
-                });
+            try {
+                // Download the project data using the new backend API
+                const sb3Data = await ProjectManager.downloadProjectSB3(projectId);
+                
+                if (!sb3Data) {
+                    throw new Error('Could not find project');
+                }
+                
+                // Pass the project data to Redux, which will trigger vm-manager-hoc to load it
+                this.props.onFetchedProjectData(sb3Data, loadingState);
+            } catch (err) {
+                this.props.onError(err);
+                log.error(err);
+            }
         }
         render () {
             const {
@@ -118,6 +124,7 @@ const ProjectFetcherHOC = function (WrappedComponent) {
                 projectToken,
                 reduxProjectId,
                 setProjectId: setProjectIdProp,
+                vm: vmProp,
                  
                 isFetchingWithId: isFetchingWithIdProp,
                 ...componentProps
@@ -148,7 +155,8 @@ const ProjectFetcherHOC = function (WrappedComponent) {
         projectToken: PropTypes.string,
         projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         reduxProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-        setProjectId: PropTypes.func
+        setProjectId: PropTypes.func,
+        vm: PropTypes.instanceOf(VM)
     };
     ProjectFetcherComponent.defaultProps = {
         assetHost: 'https://assets.scratch.mit.edu',
@@ -163,7 +171,8 @@ const ProjectFetcherHOC = function (WrappedComponent) {
         isLoadingProject: getIsLoading(state.scratchGui.projectState.loadingState),
         isShowingProject: getIsShowingProject(state.scratchGui.projectState.loadingState),
         loadingState: state.scratchGui.projectState.loadingState,
-        reduxProjectId: state.scratchGui.projectState.projectId
+        reduxProjectId: state.scratchGui.projectState.projectId,
+        vm: state.scratchGui.vm
     });
     const mapDispatchToProps = dispatch => ({
         onActivateTab: tab => dispatch(activateTab(tab)),

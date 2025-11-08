@@ -15,7 +15,6 @@ class AutoSave extends React.Component {
     constructor (props) {
         super(props);
         
-        // Manually bind methods instead of using lodash.bindAll
         this.startAutoSave = this.startAutoSave.bind(this);
         this.stopAutoSave = this.stopAutoSave.bind(this);
         this.handleAutoSave = this.handleAutoSave.bind(this);
@@ -26,25 +25,22 @@ class AutoSave extends React.Component {
             saveError: null
         };
 
-        // Create debounced save function to avoid too frequent saves
-        this.debouncedAutoSave = debounce(this.handleAutoSave, 3000);
+        // Create debounced save function
+        this.debouncedAutoSave = debounce(() => this.handleAutoSave(), 3000);
         this.autoSaveInterval = null;
     }
 
     componentDidMount () {
-        // Start auto-save if conditions are met
         if (this.canPerformAutoSave()) {
             this.startAutoSave();
         }
         
-        // Add VM listener for project changes
         if (this.props.vm) {
             this.props.vm.on('PROJECT_CHANGED', this.debouncedAutoSave);
         }
     }
 
     componentDidUpdate (prevProps) {
-        // Start/stop auto-save based on condition changes
         const canAutoSaveNow = this.canPerformAutoSave();
         const couldAutoSave = this.canPerformAutoSave(prevProps);
         
@@ -54,13 +50,11 @@ class AutoSave extends React.Component {
             this.stopAutoSave();
         }
         
-        // If project has been newly loaded, reset last save time
         if (this.props.projectId !== prevProps.projectId) {
             this.setState({ lastSaveTime: null });
             console.log('[AutoSave] Project ID changed, reset lastSaveTime');
         }
         
-        // If VM instance has changed, update listeners
         if (this.props.vm !== prevProps.vm) {
             if (prevProps.vm) {
                 prevProps.vm.removeListener('PROJECT_CHANGED', this.debouncedAutoSave);
@@ -73,11 +67,9 @@ class AutoSave extends React.Component {
 
     componentWillUnmount () {
         this.stopAutoSave();
-        // Remove VM listener
         if (this.props.vm) {
             this.props.vm.removeListener('PROJECT_CHANGED', this.debouncedAutoSave);
         }
-        // Cancel any pending debounced save
         if (this.debouncedAutoSave.cancel) {
             this.debouncedAutoSave.cancel();
         }
@@ -94,7 +86,7 @@ class AutoSave extends React.Component {
     }
 
     startAutoSave () {
-        this.stopAutoSave(); // Clear any existing interval first
+        this.stopAutoSave();
         this.autoSaveInterval = setInterval(() => {
             if (this.props.projectChanged && !this.state.isSaving) {
                 this.handleAutoSave();
@@ -113,7 +105,6 @@ class AutoSave extends React.Component {
     }
 
     handleAutoSave () {
-        // Don't save if already saving or conditions aren't met
         if (this.state.isSaving || !this.canPerformAutoSave()) {
             return;
         }
@@ -122,32 +113,46 @@ class AutoSave extends React.Component {
             Date.now() - this.state.lastSaveTime : 
             Infinity;
         
-        // Skip if we saved too recently
         if (timeSinceLastSave < this.props.minTimeBetweenSavesMs) {
             console.log(`[AutoSave] Skipping - saved ${Math.round(timeSinceLastSave/1000)}s ago`);
             return;
         }
         
         if (this.props.projectChanged) {
-            console.log('[AutoSave] Saving project...');
-            this.setState({ isSaving: true, saveError: null });
+            // ✅ Verwende Context-Props
+            const isCollaborative = this.props.contextIsCollaborative;
+            const basedOnVersionId = this.props.contextBasedOnVersionId;
             
-            // Use the SB3 save approach
+            console.log('[AutoSave] === BEFORE SAVE ===');
+            console.log('[AutoSave] Context Props:', {
+                projectId: this.props.contextProjectId,
+            });
+            
+            this.setState({ isSaving: true, saveError: null });
+
+            // Build save options
+            const saveOptions = {
+                title: this.props.projectTitle
+            };
+            
+            console.log('[AutoSave] Save options:', saveOptions);
+            
             saveProjectToServer(
                 null,
                 this.props.projectId,
                 this.props.vm,
-                { title: this.props.projectTitle }
+                saveOptions
             )
             .then(response => {
-                console.log('[AutoSave] Save successful:', response);
+                console.log('[AutoSave] === AFTER SAVE ===');
+                console.log('[AutoSave] Response:', response);
+                
                 this.setState({
                     isSaving: false,
                     lastSaveTime: Date.now(),
                     saveError: null
                 });
-                
-                // Notify parent component of successful save
+       
                 if (this.props.onSaveComplete) {
                     this.props.onSaveComplete(response);
                 }
@@ -159,7 +164,6 @@ class AutoSave extends React.Component {
                     saveError: error
                 });
                 
-                // Notify parent component of error
                 if (this.props.onSaveError) {
                     this.props.onSaveError(error);
                 }
@@ -170,7 +174,6 @@ class AutoSave extends React.Component {
     }
 
     render () {
-        // This component doesn't render anything visible
         return null;
     }
 }
@@ -186,13 +189,13 @@ AutoSave.propTypes = {
     projectTitle: PropTypes.string,
     vm: PropTypes.instanceOf(VM),
     onSaveComplete: PropTypes.func,
-    onSaveError: PropTypes.func
+    onSaveError: PropTypes.func,
 };
 
 AutoSave.defaultProps = {
     autoSaveEnabled: true,
-    autoSaveIntervalMs: 60000, // 60 seconds interval
-    minTimeBetweenSavesMs: 30000, // 30 seconds minimum between saves
+    autoSaveIntervalMs: 60000,
+    minTimeBetweenSavesMs: 30000,
     projectTitle: 'Untitled Project'
 };
 

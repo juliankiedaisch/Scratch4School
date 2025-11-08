@@ -83,6 +83,18 @@
     width: 2rem;
 }
 
+.title-field-read-only {
+    color: $ui-white;
+    font-weight: bold;
+    font-size: .8rem;
+    padding: .5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
 .file-group {
     display: flex;
     flex-direction: row;
@@ -235,4 +247,19 @@
     .help-icon {
         margin-right: 0;
     }
+}
+
+.collaboration-button {
+    margin: 0 0.5rem;
+    padding: 0.5rem;
+}
+
+.collaboration-icon {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.collaboration-button:hover .collaboration-icon {
+    filter: brightness(0) invert(1) drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
 }

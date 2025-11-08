@@ -506,3 +506,15 @@ test('projectError encountered while in state FETCHING_WITH_ID results in ' +
     expect(resultState.projectId).toBe(null);
     expect(resultState.error).toEqual('Error string');
 });
+
+test('setProjectId from SHOWING_WITHOUT_ID to a valid id should result in SHOWING_WITH_ID ' +
+    '(not fetch - project is already loaded, e.g., after saving a new project)', () => {
+    const initialState = {
+        projectId: null,
+        loadingState: LoadingState.SHOWING_WITHOUT_ID
+    };
+    const action = setProjectId('100');
+    const resultState = projectStateReducer(initialState, action);
+    expect(resultState.loadingState).toBe(LoadingState.SHOWING_WITH_ID);
+    expect(resultState.projectId).toBe('100');
+});

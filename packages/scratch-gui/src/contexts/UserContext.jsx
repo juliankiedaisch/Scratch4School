@@ -1,8 +1,7 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
-import UserService from '../lib/user-api'; // Import the existing UserService
+import UserService from '../lib/user-api';
 
-// Create the context with default values
 export const UserContext = createContext({
     currentUser: null,
     isLoggedIn: false,
@@ -20,9 +19,21 @@ export const UserContext = createContext({
     setProjectTitle: () => {},
     projectChanged: false,
     setProjectChanged: () => {},
+    isCollaborative: false,
+    setIsCollaborative: () => {},
+    currentVersionId: null,
+    setCurrentVersionId: () => {},
+    basedOnVersionId: null,
+    setBasedOnVersionId: () => {},
+    isLoadingProject: false,
+    setIsLoadingProject: () => {},
     resetProject: () => {},
     setTeacherRole: () => {},
-    setAdminRole: () => {}
+    setAdminRole: () => {},
+    collaborativeProjectId: null,
+    setCollaborativeProjectId: () => {},
+    setIsCollaborative: () => {},
+    isCollaborative: true
 });
 
 export const UserProvider = ({ children }) => {
@@ -35,6 +46,8 @@ export const UserProvider = ({ children }) => {
     const [projectId, setProjectId] = useState(null);
     const [projectTitle, setProjectTitle] = useState('Untitled Project');
     const [projectChanged, setProjectChanged] = useState(false);
+    const [collaborativeProjectId, setCollaborativeProjectId] = useState(true);
+    const [isCollaborative, setIsCollaborative] = useState(true);
 
     // User role state
     const [isTeacher, setIsTeacher] = useState(false);
@@ -42,7 +55,6 @@ export const UserProvider = ({ children }) => {
 
     // Check for auth callback on initial load
     useEffect(() => {
-        // Check if we're returning from OAuth flow
         const authResult = UserService.handleAuthCallback();
         if (authResult && authResult.error) {
             console.error('[UserContext] OAuth error:', authResult.error);
@@ -56,19 +68,14 @@ export const UserProvider = ({ children }) => {
             try {
                 setLoading(true);
                 
-                // Check if session is valid
                 const isValid = await UserService.validateSession();
                 
                 if (isValid) {
-                    // Get user data
                     const userData = await UserService.getCurrentUser();
                     
                     if (userData) {
-                        //console.log('[UserContext] User loaded:', userData.username || userData.name);
-                        //console.log('[UserContext] User:', userData);
                         setCurrentUser(userData);
                         if (userData.role) {
-                            //console.log('[UserContext] User role:', userData.role);
                             setIsTeacher(userData.role.includes('teacher'));
                             setIsAdmin(userData.role.includes('admin'));
                         }
@@ -92,59 +99,42 @@ export const UserProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    // Authentication functions
     const login = useCallback(() => {
-        //console.log('[UserContext] Initiating login with OAuth');
         setLoading(true);
         UserService.loginWithOAuth();
-        // No need to set loading to false as we're redirecting away
     }, []);
+
+    const resetProject = useCallback(() => {
+        console.log('[UserContext] Resetting project data');
+        setProjectId(null);
+        setProjectTitle('Untitled Project');
+        setProjectChanged(false);
+        
+        const resetTime = new Date().toISOString();
+        localStorage.setItem('project_reset_time', resetTime);
+
+    }, []);  
 
     const logout = useCallback(async () => {
         try {
-            //console.log('[UserContext] Logging out...');
             setLoading(true);
-            
-            // Use the UserService logout method
             await UserService.logout();
             
-            // Clear user data
             setCurrentUser(null);
             setIsTeacher(false);
             setIsAdmin(false);
             
-            // Reset project data
             resetProject();
-            
-            //console.log('[UserContext] Logout successful');
         } catch (err) {
             console.error('[UserContext] Logout error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, []);
-    
-    // Project management functions
-    const resetProject = useCallback(() => {
-        //console.log('[UserContext] Resetting project data');
-        setProjectId(null);
-        setProjectTitle('Untitled Project');
-        setProjectChanged(false);
-        // This helps us track when the project was reset
-        const resetTime = new Date().toISOString();
-        localStorage.setItem('project_reset_time', resetTime);
-        
-        // We can also track which project was being edited before the reset
-        if (projectId) {
-            localStorage.setItem('last_project_id', projectId);
-        }
-    }, [projectId]);
+    }, [resetProject]);
 
-    // Get login status from UserService
     const isLoggedIn = UserService.isLoggedIn() && !!currentUser;
 
-    // Create the context value object
     const value = {
         currentUser,
         isLoggedIn,
@@ -162,7 +152,11 @@ export const UserProvider = ({ children }) => {
         setProjectTitle,
         projectChanged,
         setProjectChanged,
-        resetProject
+        resetProject,
+        setCollaborativeProjectId,
+        collaborativeProjectId,
+        setIsCollaborative,
+        isCollaborative
     };
 
     return (

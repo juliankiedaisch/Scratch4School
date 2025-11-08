@@ -20,7 +20,6 @@ RUN pip install psycopg2-binary
 
 COPY app ./app
 COPY run.py .
-COPY scripts/migrate_sqlite_to_postgres.py .
 COPY scripts/entrypoint.sh .
 
 # Make entrypoint executable

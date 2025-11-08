@@ -15,7 +15,7 @@ from app.models.projects import Project
 from app.models.asset import Asset
 from app.models.backpack import BackpackItem
 
-def migrate_data():
+def migrate_sqlite_to_postgres():
     """Migrate data from SQLite to PostgreSQL"""
     print("Starting migration from SQLite to PostgreSQL...")
     print("PostgresPath:", os.environ.get('DATABASE_URI'))
@@ -266,4 +266,4 @@ def migrate_backpack_items(cursor, db):
 
 
 if __name__ == '__main__':
-    migrate_data()
+    migrate_sqlite_to_postgres()

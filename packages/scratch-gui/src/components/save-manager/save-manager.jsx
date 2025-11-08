@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
 import {defineMessages, FormattedMessage, injectIntl, intlShape} from 'react-intl';
-import {setCanSave} from '../../reducers/project-state';
+import {setCanSave, setProjectId} from '../../reducers/project-state';
 import {setProjectTitle} from '../../reducers/project-title';
 import saveProjectToServer from '../../lib/save-project-to-server';
 import * as ProjectManager from '../../lib/project-management';
@@ -253,10 +253,8 @@ class SaveManager extends React.Component {
             newProjectCooldown: true
         });
         
-        // Update Redux title if needed
-        if (this.props.onUpdateProjectTitle) {
-            this.props.onUpdateProjectTitle('Untitled Project');
-        }
+        // Update Redux title
+        this.props.onUpdateProjectTitle('Untitled Project');
         
         //console.log('[SaveManager] Starting new project cooldown period', this.NEW_PROJECT_COOLDOWN, 'ms');
         
@@ -274,6 +272,10 @@ class SaveManager extends React.Component {
         //console.log('[SaveManager] UserContext reset for new project');
     }
 
+    /**
+     * Handle VM's PROJECT_LOADED event
+     * Updates both UserContext and Redux state for project metadata
+     */
     handleProjectLoaded() {
         //console.log('[SaveManager] Project loaded event received');
         
@@ -296,7 +298,13 @@ class SaveManager extends React.Component {
                 // Set project ID if available
                 if (projectMetadata.id) {
                     //console.log('[SaveManager] Setting project ID from VM metadata:', projectMetadata.id);
-                    this.context.setProjectId(projectMetadata.id);
+                    const numericId = Number(projectMetadata.id);
+                    this.context.setProjectId(numericId);
+                    
+                    // Update Redux state with project ID
+                    // The reducer now handles NOT_LOADED state properly - it will transition to
+                    // SHOWING_WITH_ID without fetching, since the project is already in the VM
+                    this.props.onSetProjectId(numericId);
                     
                     // End cooldown since we're loading an existing project
                     if (this.state.newProjectCooldown) {
@@ -317,6 +325,9 @@ class SaveManager extends React.Component {
                             
                 //console.log('[SaveManager] Setting project title:', title);
                 this.context.setProjectTitle(title);
+                
+                // Update Redux state so menu bar displays the correct title
+                this.props.onUpdateProjectTitle(title);
             }
         }
     }
@@ -479,26 +490,56 @@ class SaveManager extends React.Component {
             });
             
             // Update project ID and title in context
-            if (this.context && response && response.id) {
-                //console.log('[SaveManager] Updating project metadata for new copy:', response.id);
-                this.context.setProjectId(response.id);
-                this.context.setProjectTitle(titleToUse);
-                this.context.setProjectChanged(false);
+            // For collaborative projects, use collaborative_project.id
+            if (this.context && response) {
+                let projectIdToStore = response.id;
+                let collaborativeProjectId = null;
+                
+                // If this is a new collaborative project, use collaborative_project.id
+                if (response.collaborative_project && response.collaborative_project.id) {
+                    projectIdToStore = response.collaborative_project.id;
+                    collaborativeProjectId = response.collaborative_project.id;
+                    //console.log('[SaveManager] New collaborative project copy created, storing collab ID:', projectIdToStore);
+                } else if (response.id) {
+                    projectIdToStore = response.id;
+                    //console.log('[SaveManager] Storing project ID for copy:', projectIdToStore);
+                }
+                
+                if (projectIdToStore) {
+                    const numericId = Number(projectIdToStore);
+                    this.context.setProjectId(numericId);
+                    this.context.setProjectTitle(titleToUse);
+                    this.context.setProjectChanged(false);
+                    
+                    // ✅ UPDATE Redux state with project ID (ensure it's a number)
+                    this.props.onSetProjectId(numericId);
+                    
+                    // Set collaborative project ID if available
+                    if (collaborativeProjectId) {
+                        this.context.setIsCollaborative(true);
+                        this.context.setCollaborativeProjectId(collaborativeProjectId);
+                    }
+                }
             }
             
             // Update VM metadata
-            if (this.props.vm && this.props.vm.runtime && response && response.id) {
+            if (this.props.vm && this.props.vm.runtime && response) {
+                // Use collaborative_project.id if available, otherwise use project.id
+                const idToStore = (response.collaborative_project && response.collaborative_project.id) 
+                    ? response.collaborative_project.id 
+                    : response.id;
+                    
                 this.props.vm.runtime.projectMetadata = {
-                    id: response.id,
-                    title: titleToUse
+                    id: idToStore,
+                    title: titleToUse,
+                    isCollaborative: !!(response.collaborative_project),
+                    collaborativeProjectId: response.collaborative_project ? response.collaborative_project.id : null
                 };
                 //console.log('[SaveManager] Updated VM project metadata for new copy:', this.props.vm.runtime.projectMetadata);
             }
             
             // Update Redux title
-            if (this.props.onUpdateProjectTitle) {
-                this.props.onUpdateProjectTitle(titleToUse);
-            }
+            this.props.onUpdateProjectTitle(titleToUse);
             
             // Release global save lock
             SaveManager.saveInProgress = false;
@@ -562,21 +603,54 @@ class SaveManager extends React.Component {
             });
             
             // Update project ID in context when save completes
-            if (this.context && response && response.id) {
-                //console.log('[SaveManager] Updating project ID in context:', response.id);
-                this.context.setProjectId(response.id);
-                this.context.setProjectChanged(false);
+            // For collaborative projects, use collaborative_project.id if available
+            // Otherwise use the project.id (working copy or commit id)
+            if (this.context && response) {
+                let projectIdToStore = response.id;
+                let collaborativeProjectId = null;
                 
-                // Verify context update
-                setTimeout(() => {
-                    const updatedId = this.context.projectId;
-                    //console.log('[SaveManager] Verified context project ID:', updatedId);
-                }, 100);
+                // If this is a new collaborative project, use collaborative_project.id
+                if (response.collaborative_project && response.collaborative_project.id) {
+                    projectIdToStore = response.collaborative_project.id;
+                    collaborativeProjectId = response.collaborative_project.id;
+                    //console.log('[SaveManager] New collaborative project created, storing collab ID:', projectIdToStore);
+                } else if (response.id) {
+                    projectIdToStore = response.id;
+                    //console.log('[SaveManager] Storing project ID:', projectIdToStore);
+                }
+                
+                if (projectIdToStore) {
+                    const numericId = Number(projectIdToStore);
+                    this.context.setProjectId(numericId);
+                    this.context.setProjectChanged(false);
+                    
+                    // ✅ UPDATE Redux state with project ID (ensure it's a number)
+                    this.props.onSetProjectId(numericId);
+                    
+                    // Set collaborative project ID if available
+                    if (collaborativeProjectId) {
+                        this.context.setIsCollaborative(true);
+                        this.context.setCollaborativeProjectId(collaborativeProjectId);
+                    }
+                    
+                    // Verify context update
+                    setTimeout(() => {
+                        const updatedId = this.context.projectId;
+                        //console.log('[SaveManager] Verified context project ID:', updatedId);
+                    }, 100);
+                }
             }
-            if (this.props.vm && this.props.vm.runtime && response && response.id) {
+            if (this.props.vm && this.props.vm.runtime && response) {
+                // Use collaborative_project.id if available, otherwise use project.id
+                const idToStore = (response.collaborative_project && response.collaborative_project.id) 
+                    ? response.collaborative_project.id 
+                    : response.id;
+                    
                 this.props.vm.runtime.projectMetadata = {
-                    id: response.id,
-                    title: projectTitle
+                    id: idToStore,
+                    title: projectTitle,
+                    isCollaborative: !!(response.collaborative_project),
+                    collaborativeProjectId: response.collaborative_project ? response.collaborative_project.id : null
                 };
                 //console.log('[SaveManager] Updated VM project metadata:', this.props.vm.runtime.projectMetadata);
             }
@@ -792,6 +866,8 @@ SaveManager.propTypes = {
     canSave: PropTypes.bool,
     vm: PropTypes.object,
     onSetCanSave: PropTypes.func.isRequired,
+    onSetProjectId: PropTypes.func.isRequired,
+    onUpdateProjectTitle: PropTypes.func.isRequired,
     showDebugInfo: PropTypes.bool
 };
 
@@ -806,6 +882,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
     onSetCanSave: canSave => dispatch(setCanSave(canSave)),
+    onSetProjectId: projectId => dispatch(setProjectId(projectId)),
     onUpdateProjectTitle: title => dispatch(setProjectTitle(title))
 });
 

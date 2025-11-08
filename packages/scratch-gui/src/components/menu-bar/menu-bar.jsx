@@ -16,8 +16,6 @@ import {ComingSoonTooltip} from '../coming-soon/coming-soon.jsx';
 import Divider from '../divider/divider.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
-import ProjectTitleInput from './project-title-input.jsx';
-import AuthorInfo from './author-info.jsx';
 import AccountNav from '../../components/menu-bar/account-nav.jsx';
 import SB3Downloader from '../../containers/sb3-downloader.jsx';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
@@ -99,6 +97,8 @@ import SaveManager from '../save-manager/save-manager.jsx';
 import StatusBar from './status-bar.jsx';
 import teacherIcon from './icon--teacher.svg';
 import TeacherStudentsModal from '../teacher-modal/teacher-modal.jsx';
+import collaborativeIcon from '../collaboration-manager-modal/icons/icon--collaborative.svg';
+import CollaborationManagerModal from '../collaboration-manager-modal/collaboration-manager-modal.jsx';
 
 // User context imports
 import { UserContext } from '../../contexts/UserContext';
@@ -223,6 +223,7 @@ class MenuBar extends React.Component {
             saveError: null,
             projectsModalVisible: false,
             teacherStudentsModalVisible: false,
+            collaborationModalVisible: false,
             connectionStatus: 'disconnected',
             isSaving: false,
             lastSaveTime: null,
@@ -233,6 +234,8 @@ class MenuBar extends React.Component {
         this.handleCloseProjectsModal = this.handleCloseProjectsModal.bind(this);
         this.handleShowTeacherStudentsModal = this.handleShowTeacherStudentsModal.bind(this);
         this.handleCloseTeacherStudentsModal = this.handleCloseTeacherStudentsModal.bind(this);
+        this.handleShowCollaborationModal = this.handleShowCollaborationModal.bind(this);
+        this.handleCloseCollaborationModal = this.handleCloseCollaborationModal.bind(this);
         this.handleOpenProject = this.handleOpenProject.bind(this);
         this.saveManagerRef = React.createRef();
         this.pingInterval = null;
@@ -307,6 +310,14 @@ class MenuBar extends React.Component {
 
     handleCloseProjectsModal() {
         this.setState({ projectsModalVisible: false });
+    }
+
+    handleShowCollaborationModal() {
+        this.setState({ collaborationModalVisible: true });
+    }
+
+    handleCloseCollaborationModal() {
+        this.setState({ collaborationModalVisible: false });
     }
 
     handleOpenProject(projectId) {
@@ -872,26 +883,12 @@ class MenuBar extends React.Component {
                                         </div>
                                     )}
                                 </div>
-                                {this.props.canEditTitle ? (
-                                    <div className={classNames(styles.menuBarItem, styles.growable)}>
-                                        <MenuBarItemTooltip
-                                            enable
-                                            id="title-field"
-                                        >
-                                            <ProjectTitleInput
-                                                className={classNames(styles.titleFieldGrowable)}
-                                            />
-                                        </MenuBarItemTooltip>
+                                {/* Read-only title display */}
+                                <div className={classNames(styles.menuBarItem, styles.growable)}>
+                                    <div className={classNames(styles.titleFieldGrowable, styles.titleFieldReadOnly)}>
+                                        {this.props.projectTitle || 'Untitled Project'}
                                     </div>
-                                ) : ((this.props.authorUsername && this.props.authorUsername !== this.props.username) ? (
-                                    <AuthorInfo
-                                        className={styles.authorInfo}
-                                        imageUrl={this.props.authorThumbnailUrl}
-                                        projectTitle={this.props.projectTitle}
-                                        userId={this.props.authorId}
-                                        username={this.props.authorUsername}
-                                    />
-                                ) : null)}
+                                </div>
                                 <Divider className={classNames(styles.divider)} />
                                 <div className={styles.fileGroup}>
                                     <div
@@ -940,22 +937,20 @@ class MenuBar extends React.Component {
                                                    // ************ user is logged in through OAuth ************
                                     <React.Fragment>
                                         {/* My Stuff button if URL is available */}
-                                        {menuOpts.myStuffUrl ? (
-                                            <div
-                                                className={classNames(
-                                                    styles.menuBarItem,
-                                                    styles.hoverable,
-                                                    styles.mystuffButton
-                                                )}
-                                                onClick={this.handleShowProjectsModal}
-                                            >
-                                                <img
-                                                    className={styles.mystuffIcon}
-                                                    src={mystuffIcon}
-                                                />
-                                            </div>
-                                        ) : null}
-
+                                        <div
+                                            className={classNames(
+                                                styles.menuBarItem,
+                                                styles.hoverable,
+                                                styles.collaborationButton
+                                            )}
+                                            onClick={this.handleShowCollaborationModal}
+                                            title="Collaborative Projects"
+                                        >
+                                            <img
+                                                className={styles.mystuffIcon}
+                                                src={mystuffIcon}
+                                            />
+                                        </div>
                                         {isAdmin || isTeacher ? (
                                             <div
                                                 className={classNames(
@@ -966,7 +961,8 @@ class MenuBar extends React.Component {
                                                 onClick={this.handleShowTeacherStudentsModal}
                                             >
                                                 <img
-                                                    src={teacherIcon}
+                                                    src={collaborativeIcon}
+                                                    className={styles.collaborativeIcon}
                                                 />
                                             </div>
                                         ) : null}
@@ -1040,12 +1036,16 @@ class MenuBar extends React.Component {
                                     autoSaveEnabled={true}
                                     canSave={this.props.canSave}
                                     onSaveComplete={response => {
-                                        if (response && response.id) {
+                                        if (response.collaborative_project && response.collaborative_project.id) {
+                                            this.setState({
+                                                savedProjectId: response.collaborative_project.id
+                                            });
+                                        } else if (response.id) {
                                             this.setState({
                                                 savedProjectId: response.id
                                             });
+ 
                                         }
-                                        console.log('[MenuBar] Auto-save complete:', response?.id);
                                     }}
                                     onSaveError={error => {
                                         console.error('[MenuBar] Auto-save error:', error);
@@ -1063,6 +1063,14 @@ class MenuBar extends React.Component {
                                 isOpen={this.state.projectsModalVisible}
                                 onClose={this.handleCloseProjectsModal}
                                 onOpenProject={this.handleOpenProject}
+                            />
+                        )}
+                        {/* Collaboration Manager Modal */}
+                        {isLoggedIn && currentUser && (
+                            <CollaborationManagerModal
+                                isOpen={this.state.collaborationModalVisible}
+                                onClose={this.handleCloseCollaborationModal}
+                                vm={this.props.vm}
                             />
                         )}
                         {isLoggedIn && currentUser && (isTeacher || isAdmin) && (

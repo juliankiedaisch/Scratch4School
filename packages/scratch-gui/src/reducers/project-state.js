@@ -246,9 +246,21 @@ const reducer = function (state, action) {
             });
         } else if (state.loadingState === LoadingState.SHOWING_WITHOUT_ID) {
             // if we were showing a project already, don't transition to default project.
+            // Also, don't fetch - the project is already loaded in the VM (e.g., after saving a new project)
             if (action.projectId !== defaultProjectId && action.projectId !== null) {
                 return Object.assign({}, state, {
-                    loadingState: LoadingState.FETCHING_WITH_ID,
+                    loadingState: LoadingState.SHOWING_WITH_ID,
+                    projectId: action.projectId,
+                    lastAutoSave: null // Reset lastAutoSave when projectId changes
+                });
+            }
+        } else if (state.loadingState === LoadingState.NOT_LOADED) {
+            // if we're in NOT_LOADED state and setting a project ID, it means a project was loaded
+            // outside the normal Redux flow (e.g., via project-management.js). Don't fetch - just
+            // update the state to reflect that we're showing a project.
+            if (action.projectId !== defaultProjectId && action.projectId !== null) {
+                return Object.assign({}, state, {
+                    loadingState: LoadingState.SHOWING_WITH_ID,
                     projectId: action.projectId,
                     lastAutoSave: null // Reset lastAutoSave when projectId changes
                 });
@@ -484,10 +496,18 @@ const projectError = error => ({
     error: error
 });
 
-const setProjectId = id => ({
-    type: SET_PROJECT_ID,
-    projectId: id
-});
+const setProjectId = id => {
+    // Normalize projectId to ensure consistent type
+    // Keep null and defaultProjectId ('0') as-is, convert others to number
+    let normalizedId = id;
+    if (id !== null && id !== defaultProjectId && id !== '0') {
+        normalizedId = typeof id === 'number' ? id : Number(id);
+    }
+    return {
+        type: SET_PROJECT_ID,
+        projectId: normalizedId
+    };
+};
 
 const requestNewProject = needSave => {
     if (needSave) return {type: START_UPDATING_BEFORE_CREATING_NEW};
