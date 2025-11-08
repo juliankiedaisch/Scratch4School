@@ -94,8 +94,13 @@ const ProjectFetcherHOC = function (WrappedComponent) {
             }
 
             try {
-                // Download the project data using the new backend API
-                const sb3Data = await ProjectManager.downloadProjectSB3(projectId);
+                let sb3Data;
+                if (projectId === null || typeof projectId === 'undefined' || projectId === '0' || projectId === 0) {
+                    sb3Data = await ProjectManager.downloadPlainSB3();
+                } else {
+                    // Download the project data using the new backend API
+                    sb3Data = await ProjectManager.downloadProjectSB3(projectId);
+                }
                 
                 if (!sb3Data) {
                     throw new Error('Could not find project');

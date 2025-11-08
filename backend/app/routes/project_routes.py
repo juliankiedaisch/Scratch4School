@@ -411,6 +411,28 @@ def get_project_metadata(user_info, project_id):
         return jsonify({'error': str(e)}), 500
 
 
+@projects_bp.route('/plain_project', methods=['GET'])
+def download_plain_project():
+    """
+    Download a plain new project SB3 file
+    Public endpoint
+    """
+    try:
+        filename = "newProject.sb3"
+        file_path = os.path.join(current_app.config['ASSET_FOLDER'], filename)
+        
+        return send_file(
+            file_path,
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error downloading plain project: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 @projects_bp.route('/<project_id>/download', methods=['GET'])
 @require_auth
 def download_project(user_info, project_id):

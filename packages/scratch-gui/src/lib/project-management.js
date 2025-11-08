@@ -218,6 +218,27 @@ export const downloadProjectSB3 = async (projectId, isCollaborative = null) => {
     return sb3Data;
 };
 
+
+/**
+ * Download plain project SB3 file
+ */
+export const downloadPlainSB3 = async () => {
+  
+    // Try regular project download first
+    const response = await fetch(`${PROJECTS_BASE}/plain_project`, {
+        method: 'GET',
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to download plain project: ${response.status}`);
+    }
+    
+    const sb3Data = await response.arrayBuffer();
+    console.log(`[ProjectManager] Downloaded SB3 (${sb3Data.byteLength} bytes)`);
+    
+    return sb3Data;
+};
+
 /**
  * Download collaborative project (latest commit)
  * For shared projects accessed via groups
