@@ -830,7 +830,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
         }
     }, [selectedProject]);
 
-    const handleGrantUserPermission = useCallback(async (userId, permissionLevel = 'read') => {
+    const handleGrantUserPermission = useCallback(async (userId, permissionLevel = 'READ') => {
         if (!selectedProject) return;
         
         try {
@@ -852,7 +852,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
     }, [selectedProject, fetchCollaborationData]);
     
     // Grant permission to group
-    const handleGrantGroupPermission = useCallback(async (groupId, permissionLevel = 'read') => {
+    const handleGrantGroupPermission = useCallback(async (groupId, permissionLevel = 'READ') => {
         if (!selectedProject) return;
         
         try {
@@ -1439,7 +1439,7 @@ const AddMemberDialog = ({ users, searchQuery, onSearchChange, onAdd, onClose, i
 
 const AddGroupDialog = ({ groups, onAdd, onClose, intl, messages, styles }) => {
     const [selectedGroup, setSelectedGroup] = useState(null);
-    const [selectedPermission, setSelectedPermission] = useState('read');
+    const [selectedPermission, setSelectedPermission] = useState('READ');
 
     return (
         <div className={styles.dialogOverlay}>
@@ -1479,13 +1479,13 @@ const AddGroupDialog = ({ groups, onAdd, onClose, intl, messages, styles }) => {
                                 value={selectedPermission}
                                 onChange={(e) => setSelectedPermission(e.target.value)}
                             >
-                                <option value="read">
+                                <option value="READ">
                                     👁️ {intl.formatMessage(messages.permissionRead)}
                                 </option>
-                                <option value="write">
+                                <option value="WRITE">
                                     ✏️ {intl.formatMessage(messages.permissionWrite)}
                                 </option>
-                                <option value="admin">
+                                <option value="ADMIN">
                                     👑 {intl.formatMessage(messages.permissionAdmin)}
                                 </option>
                             </select>
