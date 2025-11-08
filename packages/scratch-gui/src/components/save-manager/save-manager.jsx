@@ -490,19 +490,16 @@ class SaveManager extends React.Component {
             });
             
             // Update project ID and title in context
-            // For collaborative projects, use collaborative_project.id
+            // For new projects, store the commit/project ID returned, not the collaborative project ID
             if (this.context && response) {
-                let projectIdToStore = response.id;
+                // Always use response.id as the project ID (commit ID or working copy ID)
+                const projectIdToStore = response.id;
                 let collaborativeProjectId = null;
                 
-                // If this is a new collaborative project, use collaborative_project.id
+                // Extract collaborative project ID if available (for new projects)
                 if (response.collaborative_project && response.collaborative_project.id) {
-                    projectIdToStore = response.collaborative_project.id;
                     collaborativeProjectId = response.collaborative_project.id;
-                    //console.log('[SaveManager] New collaborative project copy created, storing collab ID:', projectIdToStore);
-                } else if (response.id) {
-                    projectIdToStore = response.id;
-                    //console.log('[SaveManager] Storing project ID for copy:', projectIdToStore);
+                    //console.log('[SaveManager] New collaborative project copy created, collab ID:', collaborativeProjectId);
                 }
                 
                 if (projectIdToStore) {
@@ -524,10 +521,8 @@ class SaveManager extends React.Component {
             
             // Update VM metadata
             if (this.props.vm && this.props.vm.runtime && response) {
-                // Use collaborative_project.id if available, otherwise use project.id
-                const idToStore = (response.collaborative_project && response.collaborative_project.id) 
-                    ? response.collaborative_project.id 
-                    : response.id;
+                // Always use response.id as the project ID (commit ID or working copy ID)
+                const idToStore = response.id;
                     
                 this.props.vm.runtime.projectMetadata = {
                     id: idToStore,
@@ -606,17 +601,14 @@ class SaveManager extends React.Component {
             // For collaborative projects, use collaborative_project.id if available
             // Otherwise use the project.id (working copy or commit id)
             if (this.context && response) {
-                let projectIdToStore = response.id;
+                // Always use response.id as the project ID (commit ID or working copy ID)
+                const projectIdToStore = response.id;
                 let collaborativeProjectId = null;
                 
-                // If this is a new collaborative project, use collaborative_project.id
+                // Extract collaborative project ID if available (for new projects)
                 if (response.collaborative_project && response.collaborative_project.id) {
-                    projectIdToStore = response.collaborative_project.id;
                     collaborativeProjectId = response.collaborative_project.id;
-                    //console.log('[SaveManager] New collaborative project created, storing collab ID:', projectIdToStore);
-                } else if (response.id) {
-                    projectIdToStore = response.id;
-                    //console.log('[SaveManager] Storing project ID:', projectIdToStore);
+                    //console.log('[SaveManager] New collaborative project created, collab ID:', collaborativeProjectId);
                 }
                 
                 if (projectIdToStore) {
@@ -624,8 +616,12 @@ class SaveManager extends React.Component {
                     this.context.setProjectId(numericId);
                     this.context.setProjectChanged(false);
                     
-                    // ✅ UPDATE Redux state with project ID (ensure it's a number)
-                    this.props.onSetProjectId(numericId);
+                    // ✅ Only update Redux state with project ID if we're creating a new project
+                    // (i.e., we didn't have a project ID before the save)
+                    // This prevents the issue where saving a loaded project causes it to refetch
+                    if (!this.props.reduxProjectId || !projectId) {
+                        this.props.onSetProjectId(numericId);
+                    }
                     
                     // Set collaborative project ID if available
                     if (collaborativeProjectId) {
@@ -641,10 +637,8 @@ class SaveManager extends React.Component {
                 }
             }
             if (this.props.vm && this.props.vm.runtime && response) {
-                // Use collaborative_project.id if available, otherwise use project.id
-                const idToStore = (response.collaborative_project && response.collaborative_project.id) 
-                    ? response.collaborative_project.id 
-                    : response.id;
+                // Always use response.id as the project ID (commit ID or working copy ID)
+                const idToStore = response.id;
                     
                 this.props.vm.runtime.projectMetadata = {
                     id: idToStore,
@@ -864,6 +858,7 @@ SaveManager.saveInProgress = false;
 
 SaveManager.propTypes = {
     canSave: PropTypes.bool,
+    reduxProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     vm: PropTypes.object,
     onSetCanSave: PropTypes.func.isRequired,
     onSetProjectId: PropTypes.func.isRequired,
@@ -877,6 +872,7 @@ SaveManager.defaultProps = {
 
 const mapStateToProps = state => ({
     canSave: state.scratchGui.projectState.canSave,
+    reduxProjectId: state.scratchGui.projectState.projectId,
     vm: state.scratchGui.vm
 });
 
