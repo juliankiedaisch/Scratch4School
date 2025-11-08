@@ -184,7 +184,7 @@ const MyProjectsTab = ({
                                                 {selectedProject.name || 'Untitled Project'}
                                             </h2>
                                             {/* Show edit button for owners and admins */}
-                                            {(selectedProject.access_via === 'owner' || selectedProject.permission === 'admin') && (
+                                            {(selectedProject.access_via === 'owner' || selectedProject.permission === 'ADMIN') && (
                                                 <button
                                                     className={styles.editTitleButton}
                                                     onClick={handleStartEditTitle}
@@ -252,7 +252,7 @@ const MyProjectsTab = ({
                                     </span>
                                 </div>
                                 {/* Admins can add members */}
-                                {selectedProject.permission === 'admin' && (
+                                {selectedProject.permission === 'ADMIN' && (
                                     <button
                                         className={styles.addButton}
                                         onClick={() => {
@@ -304,7 +304,7 @@ const MyProjectsTab = ({
                                             </div>
                                             
                                             {/* Permission Selector */}
-                                            {selectedProject.permission === 'admin' && (
+                                            {selectedProject.permission === 'ADMIN' && (
                                                 <div className={styles.permissionControls}>
                                                     <select
                                                         className={styles.permissionSelect}
@@ -335,11 +335,11 @@ const MyProjectsTab = ({
                                             )}
                                             
                                             {/* Read-only permission display */}
-                                            {selectedProject.permission !== 'admin' && (
+                                            {selectedProject.permission !== 'ADMIN' && (
                                                 <div className={styles.permissionBadge}>
-                                                    {collab.permission === 'admin' && '👑 Admin'}
-                                                    {collab.permission === 'write' && '✏️ Schreiben'}
-                                                    {collab.permission === 'read' && '👁️ Lesen'}
+                                                    {collab.permission === 'ADMIN' && '👑 Admin'}
+                                                    {collab.permission === 'WRITE' && '✏️ Schreiben'}
+                                                    {collab.permission === 'READ' && '👁️ Lesen'}
                                                 </div>
                                             )}
                                         </div>
@@ -359,7 +359,7 @@ const MyProjectsTab = ({
                                     </span>
                                 </div>
                                 {/* Admins can add groups */}
-                                {selectedProject.permission === 'admin' && (
+                                {selectedProject.permission === 'ADMIN' && (
                                     <button
                                         className={styles.addButton}
                                         onClick={() => {
@@ -390,7 +390,7 @@ const MyProjectsTab = ({
                                                 </div>
                                                 
                                                 {/* Permission Selector */}
-                                                {selectedProject.permission === 'admin' && (
+                                                {selectedProject.permission === 'ADMIN' && (
                                                     <div className={styles.permissionControls}>
                                                         <select
                                                             className={styles.permissionSelect}
@@ -422,11 +422,11 @@ const MyProjectsTab = ({
                                                 )}
                                                 
                                                 {/* Read-only permission display */}
-                                                {selectedProject.permission !== 'admin' && (
+                                                {selectedProject.permission !== 'ADMIN' && (
                                                     <div className={styles.permissionBadge}>
-                                                        {collab.permission === 'admin' && '👑 Admin'}
-                                                        {collab.permission === 'write' && '✏️ Schreiben'}
-                                                        {collab.permission === 'read' && '👁️ Lesen'}
+                                                        {collab.permission === 'ADMIN' && '👑 Admin'}
+                                                        {collab.permission === 'WRITE' && '✏️ Schreiben'}
+                                                        {collab.permission === 'READ' && '👁️ Lesen'}
                                                     </div>
                                                 )}
                                             </div>
