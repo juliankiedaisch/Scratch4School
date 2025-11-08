@@ -9,6 +9,7 @@ import VM from '@scratch/scratch-vm';
 import {setProjectUnchanged} from '../reducers/project-changed';
 import {
     LoadingStates,
+    defaultProjectId,
     getIsCreatingNew,
     getIsFetchingWithId,
     getIsLoading,
@@ -25,6 +26,7 @@ import {
 import log from './log';
 import {GUIStoragePropType} from '../gui-config';
 import * as ProjectManager from './project-management';
+import defaultProjectAsset from './default-project.sb3';
 
 /* Higher Order Component to provide behavior for loading projects by id. If
  * there's no id, the default project is loaded.
@@ -94,8 +96,18 @@ const ProjectFetcherHOC = function (WrappedComponent) {
             }
 
             try {
-                // Download the project data using the new backend API
-                const sb3Data = await ProjectManager.downloadProjectSB3(projectId);
+                let sb3Data;
+                
+                // Check if this is the default project (loaded before login)
+                if (projectId === defaultProjectId || projectId === '0' || projectId === 0) {
+                    // Load the default project from the local file instead of backend
+                    log.info('Loading default project from local file');
+                    const response = await fetch(defaultProjectAsset);
+                    sb3Data = await response.arrayBuffer();
+                } else {
+                    // Download the project data using the new backend API
+                    sb3Data = await ProjectManager.downloadProjectSB3(projectId);
+                }
                 
                 if (!sb3Data) {
                     throw new Error('Could not find project');
