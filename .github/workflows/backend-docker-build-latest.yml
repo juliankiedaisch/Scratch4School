@@ -26,6 +26,6 @@ jobs:
           context: ./backend  # Backend directory 
           file: ./backend/Dockerfile  # Backend Dockerfile
           push: true
-          tags: teacherki/scratch4school-backend:2.0
+          tags: teacherki/scratch4school-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
