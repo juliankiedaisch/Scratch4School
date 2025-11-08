@@ -26,6 +26,6 @@ jobs:
           context: ./  # Root directory for frontend
           file: ./Dockerfile  # Root Dockerfile for frontend
           push: true
-          tags: teacherki/scratch4school-frontend:latest
+          tags: teacherki/scratch4school-frontend:2.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
