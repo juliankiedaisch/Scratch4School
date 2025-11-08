@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     tags: [ 'v*' ]
     paths:
-      - '**'
+      - 'packages/**'
   workflow_dispatch:
 
 jobs:
