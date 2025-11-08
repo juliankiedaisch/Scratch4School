@@ -308,19 +308,19 @@ const MyProjectsTab = ({
                                                 <div className={styles.permissionControls}>
                                                     <select
                                                         className={styles.permissionSelect}
-                                                        value={collab.permission || 'read'}
+                                                        value={collab.permission || 'READ'}
                                                         onChange={(e) => handleChangeUserPermission(
                                                             collab.user.id,
                                                             e.target.value
                                                         )}
                                                     >
-                                                        <option value="read">
+                                                        <option value="READ">
                                                             {intl.formatMessage(messages.permissionRead)}
                                                         </option>
-                                                        <option value="write">
+                                                        <option value="WRITE">
                                                             {intl.formatMessage(messages.permissionWrite)}
                                                         </option>
-                                                        <option value="admin">
+                                                        <option value="ADMIN">
                                                             {intl.formatMessage(messages.permissionAdmin)}
                                                         </option>
                                                     </select>
@@ -394,19 +394,19 @@ const MyProjectsTab = ({
                                                     <div className={styles.permissionControls}>
                                                         <select
                                                             className={styles.permissionSelect}
-                                                            value={collab.permission || 'read'}
+                                                            value={collab.permission || 'READ'}
                                                             onChange={(e) => handleChangeGroupPermission(
                                                                 collab.group.id,
                                                                 e.target.value
                                                             )}
                                                         >
-                                                            <option value="read">
+                                                            <option value="READ">
                                                                 {intl.formatMessage(messages.permissionRead)}
                                                             </option>
-                                                            <option value="write">
+                                                            <option value="WRITE">
                                                                 {intl.formatMessage(messages.permissionWrite)}
                                                             </option>
-                                                            <option value="admin">
+                                                            <option value="ADMIN">
                                                                 {intl.formatMessage(messages.permissionAdmin)}
                                                             </option>
                                                         </select>

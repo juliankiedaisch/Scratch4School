@@ -44,13 +44,13 @@ def grant_permission(user_info, collab_id):
         
         target_user_id = data.get('user_id')
         target_group_id = data.get('group_id')
-        permission_level = data.get('permission', 'read')  # Default: read
+        permission_level = data.get('permission', 'READ')  # Default: READ
         
         # Validate permission level
         try:
             permission = PermissionLevel(permission_level)
         except ValueError:
-            return jsonify({'error': 'Invalid permission level. Must be: admin, write, or read'}), 400
+            return jsonify({'error': 'Invalid permission level. Must be: ADMIN, WRITE, or READ'}), 400
         
         # Must specify either user OR group
         if not (bool(target_user_id) ^ bool(target_group_id)):
