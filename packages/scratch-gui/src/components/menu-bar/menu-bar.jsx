@@ -989,7 +989,7 @@ class MenuBar extends React.Component {
                                             username={currentUser.username}
     
                                             // Pass through available menu options
-                                            myStuffUrl={this.handleShowProjectsModal}
+                                            myStuffUrl={this.handleShowCollaborationModal}
                                             myClassesUrl={menuOpts.myClassesUrl}
                                             myClassUrl={menuOpts.myClassUrl}
                                         />
