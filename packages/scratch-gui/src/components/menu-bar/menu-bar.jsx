@@ -92,7 +92,6 @@ import sharedMessages from '../../lib/shared-messages';
 import {AccountMenuOptionsPropTypes} from '../../lib/account-menu-options';
 
 //Scratch4School imports
-import ProjectsModal from '../projects-modal/projects-modal.jsx';
 import SaveManager from '../save-manager/save-manager.jsx';
 import StatusBar from './status-bar.jsx';
 import teacherIcon from './icon--teacher.svg';
@@ -230,8 +229,6 @@ class MenuBar extends React.Component {
             saveError: false
         };
 
-        this.handleShowProjectsModal = this.handleShowProjectsModal.bind(this);
-        this.handleCloseProjectsModal = this.handleCloseProjectsModal.bind(this);
         this.handleShowTeacherStudentsModal = this.handleShowTeacherStudentsModal.bind(this);
         this.handleCloseTeacherStudentsModal = this.handleCloseTeacherStudentsModal.bind(this);
         this.handleShowCollaborationModal = this.handleShowCollaborationModal.bind(this);
@@ -303,14 +300,6 @@ class MenuBar extends React.Component {
     handleCloseTeacherStudentsModal () {
         this.setState({ teacherStudentsModalVisible: false });
     };
-
-    handleShowProjectsModal() {
-        this.setState({ projectsModalVisible: true });
-    }
-
-    handleCloseProjectsModal() {
-        this.setState({ projectsModalVisible: false });
-    }
 
     handleShowCollaborationModal() {
         this.setState({ collaborationModalVisible: true });
@@ -1058,13 +1047,6 @@ class MenuBar extends React.Component {
                                 ref={this.saveManagerRef}
                                 // ...other props...
                             />
-                            {this.state.projectsModalVisible && (
-                            <ProjectsModal
-                                isOpen={this.state.projectsModalVisible}
-                                onClose={this.handleCloseProjectsModal}
-                                onOpenProject={this.handleOpenProject}
-                            />
-                        )}
                         {/* Collaboration Manager Modal */}
                         {isLoggedIn && currentUser && (
                             <CollaborationManagerModal
