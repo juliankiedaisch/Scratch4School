@@ -952,14 +952,17 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
                 ...prev,
                 name: newName
             }));
-            
-            // Update Redux state (like ProjectTitleInput does)
-            onUpdateProjectTitle(newName);
+        
             
             // Update UserContext (like ProjectTitleInput does)
             if (userContext) {
-                userContext.setProjectTitle(newName);
-                userContext.setProjectChanged(true);
+                console.log('[CollabModal] Updating UserContext project title. userContext projectId:', userContext.collaborativeProjectId, 'selectedProject id:', selectedProject.id);
+                if (userContext.collaborativeProjectId === selectedProject.id) {
+                    userContext.setProjectTitle(newName);
+                    userContext.setProjectChanged(true);
+                    // Update Redux state (like ProjectTitleInput does)
+                    onUpdateProjectTitle(newName);
+                }
             }
             
             // Refresh the project list for the active tab
