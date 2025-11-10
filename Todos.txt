@@ -1,0 +1,2 @@
+- When Project gets deleted and is still loaded, it gets saved in the deleted project, not as new project. Maybe the frontend should check and load a new project!?
+- There is a mixup between collab Project id and current project id stored as projectID in redux. Possible solution. Always store project id as projectid and save collabid somewhere else. when commited, a new projectid should be sent. as well

@@ -99,6 +99,7 @@ const ProjectFetcherHOC = function (WrappedComponent) {
                     sb3Data = await ProjectManager.downloadPlainSB3();
                 } else {
                     // Download the project data using the new backend API
+                    console.log('[ProjectFetcherHOC] Fetching project with ID:', projectId, 'loadingState:', loadingState);
                     sb3Data = await ProjectManager.downloadProjectSB3(projectId);
                 }
                 

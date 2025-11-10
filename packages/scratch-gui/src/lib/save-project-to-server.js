@@ -155,11 +155,8 @@ export default function (projectHost, projectId, vm, params) {
         if (data.id !== undefined) {
             // Ensure ID is a number
             data.id = Number(data.id);
-        } else if (data['content-name'] !== undefined) {
-            // Fallback to content-name field
-            data.id = Number(data['content-name']);
         }
-        
+        console.log('[saveProjectToServer] Saved project ID (returned by server):', data.id);
         if (isNaN(data.id)) {
             console.warn('[saveProjectToServer] Non-numeric ID returned:', data.id);
         }

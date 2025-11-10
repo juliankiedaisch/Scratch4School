@@ -110,7 +110,7 @@ def create_project(user_info):
         db.session.commit()
         
         current_app.logger.info(
-            f"New project created: CollaborativeProject {collab_project.id} by user {user_info['user_id']}"
+            f"New project created: CollaborativeProject {collab_project.id} by user {user_info['user_id']}. Initial commit {initial_project.id} created."
         )
         
         return jsonify({
@@ -153,7 +153,7 @@ def update_project(user_info, project_id):
         
         collab_project = None
         wc = None  # Initialize working copy variable
-        
+
         # Check if this is a working copy
         if project.is_working_copy:
             wc = project.working_copy_info

@@ -62,7 +62,7 @@ class SaveManager extends React.Component {
 
     }
     static eventListenerRegistered = false;
-    static debugDisplay = false;
+    static debugDisplay = true;
     
     componentDidMount() {
         //console.log('[SaveManager] Component mounted');
@@ -226,7 +226,7 @@ class SaveManager extends React.Component {
     }
 
     handleNewProject() {
-        //console.log('[SaveManager] Creating new project');
+        console.log('[SaveManager] Creating new project');
         
         // Reset project in context if not already reset
         if (this.context && this.context.projectId) {
@@ -304,7 +304,7 @@ class SaveManager extends React.Component {
                     // Update Redux state with project ID
                     // The reducer now handles NOT_LOADED state properly - it will transition to
                     // SHOWING_WITH_ID without fetching, since the project is already in the VM
-                    this.props.onSetProjectId(numericId);
+                    //this.props.onSetProjectId(numericId);
                     
                     // End cooldown since we're loading an existing project
                     if (this.state.newProjectCooldown) {
@@ -569,6 +569,7 @@ class SaveManager extends React.Component {
             SaveManager.saveInProgress = false;
             return;
         }
+        console.log('[SaveManager] Saving project with ID:', projectId);
         
         this.setState({ saveInProgress: true });
         
@@ -611,7 +612,6 @@ class SaveManager extends React.Component {
                 
                 // If this is a new collaborative project, use collaborative_project.id
                 if (response.collaborative_project && response.collaborative_project.id) {
-                    projectIdToStore = response.collaborative_project.id;
                     collaborativeProjectId = response.collaborative_project.id;
                     //console.log('[SaveManager] New collaborative project created, storing collab ID:', projectIdToStore);
                 } else if (response.id) {
@@ -625,7 +625,7 @@ class SaveManager extends React.Component {
                     this.context.setProjectChanged(false);
                     
                     // ✅ UPDATE Redux state with project ID (ensure it's a number)
-                    this.props.onSetProjectId(numericId);
+                    //this.props.onSetProjectId(numericId);
                     
                     // Set collaborative project ID if available
                     if (collaborativeProjectId) {
