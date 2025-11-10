@@ -292,20 +292,33 @@ export const loadProject = async (projectId, vm, options = {}) => {
         throw new Error('VM not available');
     }
     
-    if (!projectId) {
-        throw new Error('No project ID provided');
-    }
-    
     // Ensure projectId is a number for consistency with save operations
     const numericProjectId = Number(projectId);
     
     console.log('[ProjectManager] Loading project:', numericProjectId);
     
     // 1. Fetch metadata
-    const metadata = await fetchProjectMetadata(numericProjectId);
+    let metadata;
+    if (projectId === null || projectId == 0 || projectId === '0') {
+        metadata = {
+            id: 0,
+            title: 'Untitled Project',
+            isCollaborative: false,
+            isCommit: false,
+            isWorkingCopy: false,
+            isReadOnly: false
+        };
+    } else {
+        metadata = await fetchProjectMetadata(numericProjectId);
+    }
     
     // 2. Download SB3
-    const sb3Data = await downloadProjectSB3(numericProjectId);
+    let sb3Data;
+    if (projectId === null || projectId == 0 || projectId === '0') {
+        sb3Data = await downloadPlainSB3();
+    } else {
+        sb3Data = await downloadProjectSB3(numericProjectId);
+    }
     
     const title = metadata.title || 'Untitled Project';
     

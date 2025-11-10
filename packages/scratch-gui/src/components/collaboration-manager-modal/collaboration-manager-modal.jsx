@@ -440,7 +440,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
     const [showAddGroup, setShowAddGroup] = useState(false);
  
     const userContext = useContext(UserContext);
-    const { isLoggedIn } = userContext;
+    const { isLoggedIn, collaborativeProjectId } = userContext;
     
     const LAST_SELECTED_PROJECT_KEY = 'collab_modal_last_selected_project';
     const LAST_SELECTED_TAB_KEY = 'collab_modal_last_selected_tab';
@@ -741,6 +741,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
         if (!selectedProject || deleteInProgress) return;
         
         setDeleteInProgress(true);
+        const idToDelete = selectedProject.id;
         
         try {
             await ProjectManager.deleteOrLeaveProject(selectedProject.id);
@@ -773,9 +774,17 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
             }
         } finally {
             setDeleteInProgress(false);
+            if (idToDelete === collaborativeProjectId) {
+                console.log('[CollabModal] Deleted collaborative project, reloading page');
+                const loadNew = await ProjectManager.loadProject(
+                    0,
+                    vm,
+                    {userContext : userContext},
+                );
+            }
         }
     }, [selectedProject, deleteInProgress, activeTab, 
-        fetchOwnProjects, fetchCollaborationProjectsList, LAST_SELECTED_PROJECT_KEY]);
+        fetchOwnProjects, fetchCollaborationProjectsList, LAST_SELECTED_PROJECT_KEY, onUpdateProjectTitle, vm, userContext, collaborativeProjectId]);
     
     const handleCopySharedProject = useCallback(async (projectId) => {
         try {
