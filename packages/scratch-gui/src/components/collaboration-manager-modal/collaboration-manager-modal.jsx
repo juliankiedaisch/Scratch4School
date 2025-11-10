@@ -10,6 +10,7 @@ import closeIcon from '../projects-modal/icons/icon--close.svg';
 import collaborativeIcon from '../menu-bar/icon--mystuff.png';
 import { connect } from 'react-redux';
 import { setProjectTitle } from '../../reducers/project-title';
+import { setProjectId } from '../../reducers/project-state';
 import PlayerModal from '../player-modal/player-modal.jsx';
 import MyProjectsTab from './my-projects-tab.jsx';
 import CollaborationProjectsTab from './collaboration-projects-tab.jsx';
@@ -388,7 +389,7 @@ const messages = defineMessages({
     }
 });
 
-const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl }) => {
+const CollaborationManagerModal = ({ isOpen, onClose, vm, projectId, onUpdateProjectTitle, onSetProjectId, intl }) => {
     // State - Own Projects Tab
     const [ownProjects, setOwnProjects] = useState([]);
     const [loadingOwn, setLoadingOwn] = useState(true);
@@ -1752,12 +1753,14 @@ CommitDialog.propTypes = {
 
 // ✅ KORRIGIERT: mapStateToProps hinzufügen
 const mapStateToProps = state => ({
-    vm: state.scratchGui.vm
+    vm: state.scratchGui.vm,
+    projectId: state.scratchGui.projectState.projectId
 });
 
 // ✅ KORRIGIERT: mapDispatchToProps hinzufügen
 const mapDispatchToProps = dispatch => ({
-    onUpdateProjectTitle: title => dispatch(setProjectTitle(title))
+    onUpdateProjectTitle: title => dispatch(setProjectTitle(title)),
+    onSetProjectId: projectId => dispatch(setProjectId(projectId))
 });
 
 // ✅ KORRIGIERT: PropTypes aktualisieren
@@ -1767,7 +1770,9 @@ CollaborationManagerModal.propTypes = {
     vm: PropTypes.shape({
         loadProject: PropTypes.func.isRequired
     }),
+    projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     onUpdateProjectTitle: PropTypes.func.isRequired,
+    onSetProjectId: PropTypes.func.isRequired,
     intl: PropTypes.object
 };
 
