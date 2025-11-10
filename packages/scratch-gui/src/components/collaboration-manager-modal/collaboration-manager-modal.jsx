@@ -750,22 +750,17 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
             if (lastSelectedId === selectedProject.id.toString()) {
                 localStorage.removeItem(LAST_SELECTED_PROJECT_KEY);
             }
-            
+
+
+            // Clear selected project and collaboration data immediately
+            setSelectedProject(null);
+            setCollaborationData(null);
+
             // Refresh the correct tab
             if (activeTab === 'my-projects') {
                 await fetchOwnProjects();
             } else if (activeTab === 'collaboration-projects') {
                 await fetchCollaborationProjectsList();
-            }
-            
-            // Select new project based on current tab
-            const projects = activeTab === 'my-projects' ? ownProjects : collaborationProjects;
-            if (projects.length > 0) {
-                const newSelection = projects[0];
-                setSelectedProject(newSelection);
-                localStorage.setItem(LAST_SELECTED_PROJECT_KEY, newSelection.id.toString());
-            } else {
-                setSelectedProject(null);
             }
             
             setShowDeleteConfirm(false);
@@ -779,7 +774,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
         } finally {
             setDeleteInProgress(false);
         }
-    }, [selectedProject, deleteInProgress, activeTab, ownProjects, collaborationProjects, 
+    }, [selectedProject, deleteInProgress, activeTab, 
         fetchOwnProjects, fetchCollaborationProjectsList, LAST_SELECTED_PROJECT_KEY]);
     
     const handleCopySharedProject = useCallback(async (projectId) => {
@@ -936,6 +931,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
     
         setSelectedOwner(null);
         setSelectedProject(null);
+        setCollaborationData(null);
     
     }, [LAST_SELECTED_TAB_KEY]);
     
