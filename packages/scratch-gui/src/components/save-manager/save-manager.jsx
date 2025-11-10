@@ -62,7 +62,7 @@ class SaveManager extends React.Component {
 
     }
     static eventListenerRegistered = false;
-    static debugDisplay = true;
+    static debugDisplay = false;
     
     componentDidMount() {
         //console.log('[SaveManager] Component mounted');
