@@ -143,3 +143,5 @@ backend/uploads/
 backend/db/
 backend/instance/
 data/
+packages/scratch-gui/static/microbit/
+packages/scratch-gui/src/generated/
