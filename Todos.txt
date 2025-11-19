@@ -2,3 +2,4 @@
 #- There is a mixup between collab Project id and current project id stored as projectID in redux. Possible solution. Always store project id as projectid and save collabid somewhere else. when commited, a new projectid should be sent. as well
 #- when a project title gets changed. it should only change if the loaded project is the changed title project
 - There is something wrong with duplicating a project. maybe we should do this in the collaboration-manager-modal?
+- drag payload error on tablet (no dragging possible)
