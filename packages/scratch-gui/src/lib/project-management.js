@@ -7,6 +7,10 @@ const API_BASE = '/backend/api';
 const PROJECTS_BASE = `${API_BASE}/projects`;
 const COLLAB_BASE = `${API_BASE}/collaboration`;
 
+// Minimum expected size for a valid SB3 file (in bytes)
+// A minimal valid Scratch project is typically > 1KB
+const MIN_SB3_SIZE = 1000;
+
 // ============================================================
 // AUTHENTICATION & SESSION
 // ============================================================
@@ -224,7 +228,7 @@ export const downloadProjectSB3 = async (projectId, isCollaborative = null) => {
     console.log(`[ProjectManager] Downloaded SB3 (${sb3Data.byteLength} bytes)`);
     
     // Validate minimum size - a valid SB3 should be at least 1KB
-    if (sb3Data.byteLength < 1000) {
+    if (sb3Data.byteLength < MIN_SB3_SIZE) {
         console.error(`[ProjectManager] Downloaded SB3 is too small (${sb3Data.byteLength} bytes), may be corrupted`);
         throw new Error('Downloaded project file appears to be corrupted (file too small)');
     }
@@ -279,7 +283,7 @@ export const downloadCollaborativeProject = async (collabProjectId) => {
     console.log(`[ProjectManager] Downloaded collaborative project (${sb3Data.byteLength} bytes)`);
     
     // Validate minimum size - a valid SB3 should be at least 1KB
-    if (sb3Data.byteLength < 1000) {
+    if (sb3Data.byteLength < MIN_SB3_SIZE) {
         console.error(`[ProjectManager] Downloaded SB3 is too small (${sb3Data.byteLength} bytes), may be corrupted`);
         throw new Error('Downloaded project file appears to be corrupted (file too small)');
     }

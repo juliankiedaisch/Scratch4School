@@ -14,6 +14,58 @@ from io import BytesIO
 MIN_SB3_SIZE = 1000
 
 
+def _prepare_sb3_data(file_path_or_data):
+    """
+    Helper function to prepare SB3 data for processing.
+    
+    Args:
+        file_path_or_data: Either a file path string, bytes, BytesIO, or file-like object
+        
+    Returns:
+        tuple: (file_data: BytesIO or None, error_message: str or None)
+    """
+    try:
+        if isinstance(file_path_or_data, str):
+            # It's a file path
+            if not os.path.exists(file_path_or_data):
+                return None, f"File does not exist: {file_path_or_data}"
+            
+            file_size = os.path.getsize(file_path_or_data)
+            if file_size < MIN_SB3_SIZE:
+                return None, f"File too small ({file_size} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
+            
+            with open(file_path_or_data, 'rb') as f:
+                return BytesIO(f.read()), None
+                
+        elif isinstance(file_path_or_data, bytes):
+            if len(file_path_or_data) < MIN_SB3_SIZE:
+                return None, f"Data too small ({len(file_path_or_data)} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
+            return BytesIO(file_path_or_data), None
+            
+        elif isinstance(file_path_or_data, BytesIO):
+            file_data = file_path_or_data
+            file_data.seek(0, 2)  # Seek to end
+            size = file_data.tell()
+            file_data.seek(0)  # Seek back to start
+            if size < MIN_SB3_SIZE:
+                return None, f"Data too small ({size} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
+            return file_data, None
+            
+        elif hasattr(file_path_or_data, 'read'):
+            # File-like object (like werkzeug FileStorage)
+            file_data = BytesIO(file_path_or_data.read())
+            file_path_or_data.seek(0)  # Reset position for later use
+            
+            if len(file_data.getvalue()) < MIN_SB3_SIZE:
+                return None, f"Data too small ({len(file_data.getvalue())} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
+            return file_data, None
+        else:
+            return None, f"Unsupported input type: {type(file_path_or_data)}"
+            
+    except Exception as e:
+        return None, f"Error preparing data: {str(e)}"
+
+
 def is_valid_sb3(file_path_or_data):
     """
     Validate that a file is a valid SB3 (Scratch 3) project file.
@@ -28,36 +80,10 @@ def is_valid_sb3(file_path_or_data):
         tuple: (is_valid: bool, error_message: str or None)
     """
     try:
-        # Handle both file paths and binary data
-        if isinstance(file_path_or_data, str):
-            # It's a file path
-            if not os.path.exists(file_path_or_data):
-                return False, f"File does not exist: {file_path_or_data}"
-            
-            file_size = os.path.getsize(file_path_or_data)
-            if file_size < MIN_SB3_SIZE:
-                return False, f"File too small ({file_size} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
-            
-            with open(file_path_or_data, 'rb') as f:
-                file_data = BytesIO(f.read())
-        elif isinstance(file_path_or_data, bytes):
-            if len(file_path_or_data) < MIN_SB3_SIZE:
-                return False, f"Data too small ({len(file_path_or_data)} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
-            file_data = BytesIO(file_path_or_data)
-        elif isinstance(file_path_or_data, BytesIO):
-            file_data = file_path_or_data
-            file_data.seek(0, 2)  # Seek to end
-            size = file_data.tell()
-            file_data.seek(0)  # Seek back to start
-            if size < MIN_SB3_SIZE:
-                return False, f"Data too small ({size} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
-        else:
-            # Try to read from file-like object (like werkzeug FileStorage)
-            file_data = BytesIO(file_path_or_data.read())
-            file_path_or_data.seek(0)  # Reset position for later use
-            
-            if len(file_data.getvalue()) < MIN_SB3_SIZE:
-                return False, f"Data too small ({len(file_data.getvalue())} bytes). Minimum expected: {MIN_SB3_SIZE} bytes"
+        # Prepare data using helper function
+        file_data, error = _prepare_sb3_data(file_path_or_data)
+        if error:
+            return False, error
         
         # Try to open as ZIP
         try:
@@ -131,15 +157,10 @@ def get_sb3_info(file_path_or_data):
         return None
     
     try:
-        if isinstance(file_path_or_data, str):
-            with open(file_path_or_data, 'rb') as f:
-                file_data = BytesIO(f.read())
-        elif isinstance(file_path_or_data, bytes):
-            file_data = BytesIO(file_path_or_data)
-        else:
-            file_data = file_path_or_data
-            if hasattr(file_data, 'seek'):
-                file_data.seek(0)
+        # Use helper to prepare data
+        file_data, error = _prepare_sb3_data(file_path_or_data)
+        if error:
+            return None
         
         with zipfile.ZipFile(file_data, 'r') as zf:
             project_json = zf.read('project.json')
