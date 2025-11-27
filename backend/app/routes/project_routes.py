@@ -10,6 +10,7 @@ from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
 from app.middlewares.auth import check_auth
+from app.utils.sb3_validation import is_valid_sb3, validate_sb3_file
 from datetime import datetime, timezone
 from app import db
 from flask import Blueprint, request, current_app, jsonify, send_file, g
@@ -52,6 +53,20 @@ def create_project(user_info):
         
         project_file = request.files['project_file']
         thumbnail_file = request.files.get('thumbnail')
+        
+        # Validate the SB3 file before processing
+        is_valid, validation_error = is_valid_sb3(project_file)
+        if not is_valid:
+            current_app.logger.warning(
+                f"Invalid SB3 file uploaded by user {user_info['user_id']}: {validation_error}"
+            )
+            return jsonify({
+                'error': 'Invalid project file',
+                'details': validation_error
+            }), 400
+        
+        # Reset file position after validation
+        project_file.seek(0)
         
         # ============================================================
         # CREATE COLLABORATIVE PROJECT
@@ -251,6 +266,20 @@ def update_project(user_info, project_id):
         project_file = request.files['project_file']
         if project_file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
+        
+        # Validate the SB3 file before processing
+        is_valid, validation_error = is_valid_sb3(project_file)
+        if not is_valid:
+            current_app.logger.warning(
+                f"Invalid SB3 file uploaded for project {project_id} by user {user_info.get('user_id')}: {validation_error}"
+            )
+            return jsonify({
+                'error': 'Invalid project file',
+                'details': validation_error
+            }), 400
+        
+        # Reset file position after validation
+        project_file.seek(0)
         
         # Save file (overwrite)
         upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'projects')
@@ -494,6 +523,19 @@ def download_project(user_info, project_id):
         
         # Send file
         if project.sb3_file_path and os.path.exists(project.sb3_file_path):
+            # Validate the SB3 file before serving
+            is_valid, validation_error = is_valid_sb3(project.sb3_file_path)
+            if not is_valid:
+                current_app.logger.error(
+                    f"Invalid SB3 file for project {project_id}: {validation_error}. "
+                    f"File path: {project.sb3_file_path}, "
+                    f"File size: {os.path.getsize(project.sb3_file_path)} bytes"
+                )
+                return jsonify({
+                    'error': 'Project file is corrupted or invalid',
+                    'details': validation_error
+                }), 500
+            
             filename = f"{project.name.replace(' ', '_')}.sb3"
             
             return send_file(

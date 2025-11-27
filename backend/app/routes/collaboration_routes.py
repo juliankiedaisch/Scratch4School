@@ -11,6 +11,7 @@ from app.models.projects import (
 from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
+from app.utils.sb3_validation import is_valid_sb3, validate_sb3_file
 from datetime import datetime, timezone
 import os
 import shutil
@@ -477,6 +478,20 @@ def download_collaborative_project(user_info, collab_id):
         
         # Send file
         if latest_project.sb3_file_path and os.path.exists(latest_project.sb3_file_path):
+            # Validate the SB3 file before serving
+            is_valid, validation_error = is_valid_sb3(latest_project.sb3_file_path)
+            if not is_valid:
+                current_app.logger.error(
+                    f"Invalid SB3 file for collaborative project {collab_id} "
+                    f"(commit {collab_project.latest_commit_id}): {validation_error}. "
+                    f"File path: {latest_project.sb3_file_path}, "
+                    f"File size: {os.path.getsize(latest_project.sb3_file_path)} bytes"
+                )
+                return jsonify({
+                    'error': 'Project file is corrupted or invalid',
+                    'details': validation_error
+                }), 500
+            
             filename = f"{collab_project.name.replace(' ', '_')}_latest.sb3"
             
             return send_file(
@@ -1143,6 +1158,19 @@ def download_commit(user_info, collab_id, commit_num):
         
         if not commit_project.sb3_file_path or not os.path.exists(commit_project.sb3_file_path):
             return jsonify({'error': 'Commit file not found'}), 404
+        
+        # Validate the SB3 file before serving
+        is_valid, validation_error = is_valid_sb3(commit_project.sb3_file_path)
+        if not is_valid:
+            current_app.logger.error(
+                f"Invalid SB3 file for commit {commit_num} of project {collab_id}: {validation_error}. "
+                f"File path: {commit_project.sb3_file_path}, "
+                f"File size: {os.path.getsize(commit_project.sb3_file_path)} bytes"
+            )
+            return jsonify({
+                'error': 'Project file is corrupted or invalid',
+                'details': validation_error
+            }), 500
         
         return send_file(
             commit_project.sb3_file_path,

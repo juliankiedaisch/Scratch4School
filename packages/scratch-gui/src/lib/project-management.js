@@ -209,11 +209,25 @@ export const downloadProjectSB3 = async (projectId, isCollaborative = null) => {
     }
     
     if (!response.ok) {
-        throw new Error(`Failed to download project: ${response.status}`);
+        // Try to get error details from response
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.details || errorData.error || `HTTP ${response.status}`;
+            console.error(`[ProjectManager] Download failed: ${errorMessage}`);
+            throw new Error(`Failed to download project: ${errorMessage}`);
+        } catch (parseError) {
+            throw new Error(`Failed to download project: HTTP ${response.status}`);
+        }
     }
     
     const sb3Data = await response.arrayBuffer();
     console.log(`[ProjectManager] Downloaded SB3 (${sb3Data.byteLength} bytes)`);
+    
+    // Validate minimum size - a valid SB3 should be at least 1KB
+    if (sb3Data.byteLength < 1000) {
+        console.error(`[ProjectManager] Downloaded SB3 is too small (${sb3Data.byteLength} bytes), may be corrupted`);
+        throw new Error('Downloaded project file appears to be corrupted (file too small)');
+    }
     
     return sb3Data;
 };
@@ -250,11 +264,25 @@ export const downloadCollaborativeProject = async (collabProjectId) => {
     });
     
     if (!response.ok) {
-        throw new Error(`Failed to download collaborative project: ${response.status}`);
+        // Try to get error details from response
+        try {
+            const errorData = await response.json();
+            const errorMessage = errorData.details || errorData.error || `HTTP ${response.status}`;
+            console.error(`[ProjectManager] Collaborative download failed: ${errorMessage}`);
+            throw new Error(`Failed to download collaborative project: ${errorMessage}`);
+        } catch (parseError) {
+            throw new Error(`Failed to download collaborative project: HTTP ${response.status}`);
+        }
     }
     
     const sb3Data = await response.arrayBuffer();
     console.log(`[ProjectManager] Downloaded collaborative project (${sb3Data.byteLength} bytes)`);
+    
+    // Validate minimum size - a valid SB3 should be at least 1KB
+    if (sb3Data.byteLength < 1000) {
+        console.error(`[ProjectManager] Downloaded SB3 is too small (${sb3Data.byteLength} bytes), may be corrupted`);
+        throw new Error('Downloaded project file appears to be corrupted (file too small)');
+    }
     
     return sb3Data;
 };
