@@ -5,7 +5,7 @@ set -euo pipefail
 SOURCE_BRANCH="refs/heads/mdg"        # Branch to publish
 PUBLIC_REPO_DIR="/home/julian/Code/Scratch4School"  # Public repo directory
 WORKING_REPO_DIR="/home/julian/Code/scratch-editor"  # Working repo directory
-PUBLIC_REMOTE="git@github.com:juliankiedaisch/Scratch4School.git"  # GitHub remote
+PUBLIC_REMOTE="git@github. com:juliankiedaisch/Scratch4School"  # GitHub remote
 PUBLIC_BRANCH="main"                  # Branch to push to GitHub
 LAST_SYNC_FILE="$PUBLIC_REPO_DIR/.last_sync_commit"  # File to track last sync point
 
@@ -55,7 +55,7 @@ fi
 
 # Check if we have a last sync commit recorded
 FIRST_RUN=false
-if [ ! -f "$LAST_SYNC_FILE" ]; then
+if [ !  -f "$LAST_SYNC_FILE" ]; then
   echo "No last sync commit found - will create an initial snapshot (no history)"
   FIRST_RUN=true
 else
@@ -63,29 +63,49 @@ else
   echo "Found last sync commit: $LAST_SYNC_COMMIT"
 fi
 
+# Save the current branch in working repo to restore it later
+cd "$WORKING_REPO_DIR"
+ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+ORIGINAL_COMMIT=$(git rev-parse HEAD)
+echo "Working repo currently on: $ORIGINAL_BRANCH ($ORIGINAL_COMMIT)"
+
+# Cleanup function - restore working repo state
+cleanup() {
+  echo "Cleaning up..."
+  
+  # Restore original branch in working repo
+  if [ -n "${ORIGINAL_BRANCH:-}" ]; then
+    cd "$WORKING_REPO_DIR"
+    echo "Restoring working repository to original state:  $ORIGINAL_BRANCH"
+    git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout "$ORIGINAL_COMMIT" 2>/dev/null || true
+  fi
+  
+  # Remove temporary directory
+  if [ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ]; then
+    echo "Removing temporary directory..."
+    rm -rf "$TMP_DIR"
+  fi
+}
+trap cleanup EXIT
+
 # Get the latest commit from the source branch
 cd "$WORKING_REPO_DIR"
+echo "Fetching latest changes for $SOURCE_BRANCH..."
+git fetch origin mdg: mdg 2>/dev/null || git fetch mdg mdg: mdg 2>/dev/null || true
 git checkout mdg
 echo "Checkout done"
-git pull mdg mdg
+git pull origin mdg 2>/dev/null || git pull mdg mdg 2>/dev/null || true
 
 LATEST_COMMIT=$(git rev-parse "$SOURCE_BRANCH")
 echo "Latest commit in $SOURCE_BRANCH: $LATEST_COMMIT"
 
 # Create temporary directory
 TMP_DIR=$(mktemp -d)
-echo "Created temporary directory: $TMP_DIR"
-
-# Cleanup function
-cleanup() {
-  echo "Cleaning up temporary directory..."
-  rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
+echo "Created temporary directory:  $TMP_DIR"
 
 # Check if this is the first run (no history to preserve)
 if [ "$FIRST_RUN" = true ]; then
-  echo "FIRST RUN: Creating clean snapshot without history..."
+  echo "FIRST RUN:  Creating clean snapshot without history..."
   
   # Create a fresh clone for the export instead of using git archive
   echo "Cloning the repository to ensure all files are included..."
@@ -94,7 +114,7 @@ if [ "$FIRST_RUN" = true ]; then
   
   # Copy all files directly (not using git archive which may filter files)
   echo "Copying all files to temporary directory..."
-  rsync -av --exclude=".git/" . "$TMP_DIR/"
+  rsync -av --exclude=".git/" .  "$TMP_DIR/"
   
   # Verify SVG files were copied
   echo "Verifying SVG files..."
@@ -123,7 +143,7 @@ if [ "$FIRST_RUN" = true ]; then
   fi
 
   # Set remote
-  if ! git remote | grep -q "^origin$"; then
+  if !  git remote | grep -q "^origin$"; then
     echo "Adding remote origin..."
     git remote add origin "$PUBLIC_REMOTE"
   else
@@ -134,8 +154,8 @@ if [ "$FIRST_RUN" = true ]; then
   # Copy files from temp to public repo with explicit binary handling
   echo "Copying files to public repository..."
   rsync -av --delete --exclude=".git/" \
-        --include="*.svg" --include="*.png" --include="*.jpg" --include="*.jpeg" \
-        --include="*.gif" --include="*.webp" --include="*.ico" \
+        --include="*.svg" --include="*.png" --include="*.jpg" --include="*. jpeg" \
+        --include="*. gif" --include="*.webp" --include="*.ico" \
         "$TMP_DIR/" "$PUBLIC_REPO_DIR/"
   
   # Verify files were copied correctly
@@ -144,33 +164,26 @@ if [ "$FIRST_RUN" = true ]; then
   echo "Found $SVG_COUNT_DEST SVG files in public repository"
   
   # Add all files and make a single initial commit
-  git add -A .
+  git add -A . 
   git commit -m "Initial snapshot from $SOURCE_BRANCH as of $(date '+%Y-%m-%d %H:%M:%S')"
   echo "Created initial snapshot commit"
   
 else
-  # Not the first run - create patches for incremental updates with history
-  PATCHES_DIR="$TMP_DIR/patches"
-  mkdir -p "$PATCHES_DIR"
-  echo "Creating patches for new commits since last sync..."
+  # Not the first run - use rsync approach instead of patches
+  echo "Syncing changes since last sync..."
   
   # Check if the last sync commit exists in the working repository
-  if git rev-parse --quiet --verify "$LAST_SYNC_COMMIT^{commit}" >/dev/null; then
-    # Create patches from last sync commit to HEAD
-    git format-patch -o "$PATCHES_DIR" "$LAST_SYNC_COMMIT..$LATEST_COMMIT"
-    NEW_COMMITS=$(git rev-list --count "$LAST_SYNC_COMMIT..$LATEST_COMMIT")
-    echo "Found $NEW_COMMITS new commits"
-  else
-    echo "Error: Last sync commit not found in repository. This shouldn't happen."
+  if ! git rev-parse --quiet --verify "$LAST_SYNC_COMMIT^{commit}" >/dev/null; then
+    echo "Error:  Last sync commit not found in repository."
     echo "Please delete $LAST_SYNC_FILE and run again for a clean snapshot."
     exit 1
   fi
 
-  # Check if we have any patches to apply
-  PATCH_COUNT=$(ls -1 "$PATCHES_DIR"/*.patch 2>/dev/null | wc -l || echo "0")
-  echo "$PATCH_COUNT is Patchcount"
-  if [ "$PATCH_COUNT" -eq 0 ]; then
-    echo "No new commits to publish. Already up to date."
+  NEW_COMMITS=$(git rev-list --count "$LAST_SYNC_COMMIT. .$LATEST_COMMIT")
+  echo "Found $NEW_COMMITS new commits since last sync"
+
+  if [ "$NEW_COMMITS" -eq 0 ]; then
+    echo "No new commits to publish.  Already up to date."
     
     # Create tag even if there are no new commits (if requested)
     if [ -n "$TAG_NAME" ]; then
@@ -188,8 +201,10 @@ else
     exit 0
   fi
 
-  echo "Created $PATCH_COUNT patch files"
-
+  # Get commit messages for the summary commit
+  echo "Collecting commit messages..."
+  COMMIT_MESSAGES=$(git log --format="- %s" "$LAST_SYNC_COMMIT..$LATEST_COMMIT")
+  
   # Now setup the public repository
   cd "$PUBLIC_REPO_DIR"
 
@@ -197,15 +212,33 @@ else
   echo "Syncing with GitHub..."
   git pull origin "$PUBLIC_BRANCH" || echo "Could not pull (possibly empty repository)"
 
-  # Apply patches in order to apply new commits
-  echo "Applying patches for new commits..."
-  if [ "$PATCH_COUNT" -gt 0 ]; then
-    git am --ignore-whitespace "$PATCHES_DIR"/*.patch || {
-      echo "Error applying patches. Aborting."
-      git am --abort
-      exit 1
-    }
-    echo "Applied all patches with original commit messages"
+  # Sync files using rsync (more reliable than patches)
+  echo "Syncing files from source repository..."
+  rsync -av --delete \
+        --exclude=".git/" \
+        --exclude=".last_sync_commit" \
+        --include="*.svg" --include="*. png" --include="*.jpg" --include="*.jpeg" \
+        --include="*.gif" --include="*.webp" --include="*.ico" \
+        "$WORKING_REPO_DIR/" "$PUBLIC_REPO_DIR/"
+  
+  # Check if there are any changes
+  if git diff --quiet && git diff --cached --quiet; then
+    echo "No file changes detected after sync."
+  else
+    echo "Changes detected, creating commit..."
+    
+    # Stage all changes
+    git add -A .
+    
+    # Create a single commit with summary of all source commits
+    SUMMARY_MESSAGE="Sync $NEW_COMMITS commits from $SOURCE_BRANCH
+
+$COMMIT_MESSAGES
+
+Source commit range: $LAST_SYNC_COMMIT..$LATEST_COMMIT"
+    
+    git commit -m "$SUMMARY_MESSAGE"
+    echo "Created sync commit summarizing $NEW_COMMITS source commits"
   fi
 fi
 
@@ -235,12 +268,13 @@ else
   echo "Pushed branch to GitHub."
 fi
 
-echo "==== Publishing complete! ===="
+echo "==== Publishing complete!  ===="
 if [ "$FIRST_RUN" = true ]; then
   echo "Published initial snapshot from $SOURCE_BRANCH to GitHub"
 else
-  echo "Published $PATCH_COUNT new commits from $SOURCE_BRANCH to GitHub"
+  echo "Published $NEW_COMMITS new commits from $SOURCE_BRANCH to GitHub"
 fi
 if [ -n "$TAG_NAME" ]; then
-  echo "Created and pushed tag: $TAG_NAME"
+  echo "Created and pushed tag:  $TAG_NAME"
 fi
+echo "Working repository restored to:  $ORIGINAL_BRANCH"
