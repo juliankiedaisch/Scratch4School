@@ -1,1 +1,3 @@
-export { type BucketOptions, CancelReason, TaskHerder } from './TaskHerder'
+export { CancelReason } from './CancelReason'
+export { type QueueOptions, TaskQueue } from './TaskQueue'
+export { QueueManager } from './QueueManager'

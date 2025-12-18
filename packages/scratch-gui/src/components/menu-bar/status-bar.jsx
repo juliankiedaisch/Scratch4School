@@ -41,12 +41,12 @@ const messages = defineMessages({
 const StatusBar = props => {
     const {
         className,
-        isSaving,
-        lastSaveTime,
-        saveError,
-        projectChanged,
-        isNewProject,
-        onClickToSave,
+        isSaving = false,
+        lastSaveTime = null,
+        saveError = false,
+        projectChanged = false,
+        isNewProject = false,
+        onClickToSave = () => {},
         intl,
         ...otherProps
     } = props;
@@ -92,15 +92,6 @@ StatusBar.propTypes = {
     projectChanged: PropTypes.bool,
     isNewProject: PropTypes.bool,
     onClickToSave: PropTypes.func,
-};
-
-StatusBar.defaultProps = {
-    isSaving: false,
-    lastSaveTime: null,
-    saveError: false,
-    projectChanged: false,
-    isNewProject: false,
-    onClickToSave: () => {}
 };
 
 export default injectIntl(StatusBar);

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TaskHerder } from '../src'
+import { TaskQueue } from '../src'
 import { waitTicks, makeTask } from './test-utilities'
 
 describe('concurrency limit 1', () => {
@@ -10,7 +10,7 @@ describe('concurrency limit 1', () => {
     vi.restoreAllMocks()
   })
   it('should obey the concurrency limit', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 10,
       burstLimit: 10,
       sustainRate: 1, // refill isn't relevant for this test

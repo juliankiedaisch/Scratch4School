@@ -174,6 +174,71 @@ const messages = defineMessages({
         id: 'gui.teacherStudentsModal.normalProject',
         defaultMessage: 'Normal Project',
         description: 'Label for normal projects'
+    },
+    collaboratorBadge: {
+        id: 'gui.teacherStudentsModal.collaboratorBadge',
+        defaultMessage: 'Collaborator',
+        description: 'Badge indicating student is a collaborator, not owner'
+    },
+    ownedBy: {
+        id: 'gui.teacherStudentsModal.ownedBy',
+        defaultMessage: 'Owned by {owner}',
+        description: 'Label showing who owns the project'
+    },
+    workingCopies: {
+        id: 'gui.teacherStudentsModal.workingCopies',
+        defaultMessage: 'Working Copies',
+        description: 'Label for working copies section'
+    },
+    openVersion: {
+        id: 'gui.teacherStudentsModal.openVersion',
+        defaultMessage: 'Open',
+        description: 'Button to open a specific version'
+    },
+    openWorkingCopy: {
+        id: 'gui.teacherStudentsModal.openWorkingCopy',
+        defaultMessage: 'Open',
+        description: 'Button to open a working copy'
+    },
+    noWorkingCopies: {
+        id: 'gui.teacherStudentsModal.noWorkingCopies',
+        defaultMessage: 'No working copies yet',
+        description: 'Message when there are no working copies'
+    },
+    workingCopyExists: {
+        id: 'gui.teacherStudentsModal.workingCopyExists',
+        defaultMessage: 'Working copy exists',
+        description: 'Indicator that a working copy exists for this version'
+    },
+    members: {
+        id: 'gui.teacherStudentsModal.members',
+        defaultMessage: 'Members',
+        description: 'Label for project members section'
+    },
+    roleRead: {
+        id: 'gui.teacherStudentsModal.roleRead',
+        defaultMessage: 'Read',
+        description: 'Read permission role'
+    },
+    roleWrite: {
+        id: 'gui.teacherStudentsModal.roleWrite',
+        defaultMessage: 'Write',
+        description: 'Write permission role'
+    },
+    roleAdmin: {
+        id: 'gui.teacherStudentsModal.roleAdmin',
+        defaultMessage: 'Admin',
+        description: 'Admin permission role'
+    },
+    noMembers: {
+        id: 'gui.teacherStudentsModal.noMembers',
+        defaultMessage: 'No other members',
+        description: 'Message when project has no other members'
+    },
+    lastEdited: {
+        id: 'gui.teacherStudentsModal.lastEdited',
+        defaultMessage: 'Last edited',
+        description: 'Label for last edited time of working copy'
     }
 });
 
@@ -295,12 +360,33 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
             return;
         }
         
+        if (!selectedStudent) {
+            setCollaborationData(null);
+            return;
+        }
+        
         setLoadingCollabData(true);
         
         try {
-            const data = await ProjectManager.fetchCollaborationData(project.id);
+            // ✅ Pass student ID to get their working copies
+            const data = await ProjectManager.fetchCollaborationData(project.id, selectedStudent.id);
             
             console.log('[TeacherStudentsModal] Collaboration data:', data);
+
+            
+            // Transform working_copies from object to dict indexed by commit_id for easy lookup
+            if (data.working_copies && !Array.isArray(data.working_copies)) {
+                // Keep it as an object for easy lookup by commit_id
+                // Just ensure each working copy has the commit_id stored
+                const wcDict = {};
+                for (const [commitId, wc] of Object.entries(data.working_copies)) {
+                    wcDict[commitId] = {
+                        ...wc,
+                        commit_id: commitId
+                    };
+                }
+                data.working_copies = wcDict;
+            }
             
             setCollaborationData(data);
         } catch (err) {
@@ -309,7 +395,7 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
         } finally {
             setLoadingCollabData(false);
         }
-    }, []);
+    }, [selectedStudent]);
 
     const handleProjectSelect = useCallback((project) => {
         console.log('[TeacherStudentsModal] Selected project:', project);
@@ -668,10 +754,23 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                 <div className={styles.projectItemContent}>
                                                     <div className={styles.projectItemTitle}>
                                                         {project.title || project.name || 'Untitled Project'}
+                                                        {project.is_collaborator && (
+                                                            <span className={styles.collaboratorIndicator} title={project.owner_username ? `Owned by ${project.owner_username}` : 'Collaborator'}>
+                                                                🤝
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     
                                                     <div className={styles.projectItemMeta}>
-                                                        {project.project_type === 'collaborative' && (
+                                                        {project.is_collaborator && project.owner_username && (
+                                                            <span className={styles.ownerBadge}>
+                                                                <FormattedMessage 
+                                                                    {...messages.ownedBy}
+                                                                    values={{ owner: project.owner_username }}
+                                                                />
+                                                            </span>
+                                                        )}
+                                                        {project.project_type === 'collaborative' && project.write_admin_count > 1 && (
                                                             <span className={styles.projectBadge}>
                                                                 👥 <FormattedMessage {...messages.collaborativeProject} />
                                                             </span>
@@ -718,15 +817,26 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                 <div className={styles.projectDetailHeaderInfo}>
                                                     <h2 className={styles.projectDetailTitle}>
                                                         {selectedProject.title || selectedProject.name || 'Untitled Project'}
+                                                        {selectedProject.is_collaborator && (
+                                                            <span className={styles.collaboratorBadge}>
+                                                                🤝 <FormattedMessage {...messages.collaboratorBadge} />
+                                                            </span>
+                                                        )}
                                                     </h2>
                                                     <div className={styles.projectDetailMeta}>
-                                                        <span className={styles.metaBadge}>
-                                                            {selectedProject.project_type === 'collaborative' ? (
+                                                        {selectedProject.is_collaborator && selectedProject.owner_username && (
+                                                            <span className={styles.ownerInfo}>
+                                                                <FormattedMessage 
+                                                                    {...messages.ownedBy}
+                                                                    values={{ owner: selectedProject.owner_username }}
+                                                                />
+                                                            </span>
+                                                        )}
+                                                        {selectedProject.project_type === 'collaborative' && selectedProject.write_admin_count > 1 && (
+                                                            <span className={styles.metaBadge}>
                                                                 <FormattedMessage {...messages.collaborativeProject} />
-                                                            ) : (
-                                                                <FormattedMessage {...messages.normalProject} />
-                                                            )}
-                                                        </span>
+                                                            </span>
+                                                        )}
                                                         {selectedProject.is_deleted && (
                                                             <span className={styles.deletedBadge}>
                                                                 🗑️ Deleted on {formatDate(selectedProject.deleted_at)}
@@ -736,10 +846,11 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                 </div>
                                             </div>
                                             
-                                            {/* Project Actions */}
-                                            <div className={styles.projectDetailActions}>
+
                                                 {selectedProject.is_deleted ? (
                                                     <>
+                                                    {/* Project Actions */}
+                                                    <div className={styles.projectDetailActions}>
                                                         <button 
                                                             className={styles.restoreButton}
                                                             onClick={() => handleRestoreProject(selectedProject.id, selectedProject.project_type)}
@@ -755,17 +866,10 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                         >
                                                             🗑️ <FormattedMessage {...messages.deletePermProject} />
                                                         </button>
+                                                    </div>
                                                     </>
-                                                ) : (
-                                                    <button 
-                                                        className={styles.viewButton}
-                                                        onClick={() => handleOpenProject(selectedProject.latest_commit_id)}
-                                                        disabled={loadingProject}
-                                                    >
-                                                        <FormattedMessage {...messages.openProject} />
-                                                    </button>
-                                                )}
-                                            </div>
+                                                ) : (null)}
+                                            
                                             
                                             {/* Project Info Section */}
                                             <div className={styles.projectInfoSection}>
@@ -787,6 +891,50 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                 </div>
                                             </div>
                                             
+                                            {/* Members Section (only for collaborative projects) */}
+                                            {selectedProject.project_type === 'collaborative' && !selectedProject.is_deleted && (
+                                                <div className={styles.membersSection}>
+                                                    <div className={styles.sectionHeader}>
+                                                        <div className={styles.sectionTitle}>
+                                                            <img src={userIcon} alt="Members" className={styles.sectionIcon} />
+                                                            <FormattedMessage {...messages.members} />
+                                                            <span className={styles.badge}>
+                                                                {collaborationData?.collaborators?.length || 0}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className={styles.membersList}>
+                                                        {loadingCollabData && (
+                                                            <div className={styles.loadingContainer}>
+                                                                <div className={styles.spinner} />
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {!loadingCollabData && collaborationData?.collaborators?.map(collab => (
+                                                            <div key={collab.user.id} className={styles.memberItem}>
+                                                                <div className={styles.memberInfo}>
+                                                                    <span className={styles.memberName}>
+                                                                        {collab.user.username}
+                                                                    </span>
+                                                                    <span className={styles.memberRole}>
+                                                                        {collab.permission === 'read' && <FormattedMessage {...messages.roleRead} />}
+                                                                        {collab.permission === 'write' && <FormattedMessage {...messages.roleWrite} />}
+                                                                        {collab.permission === 'admin' && <FormattedMessage {...messages.roleAdmin} />}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        
+                                                        {!loadingCollabData && (!collaborationData?.collaborators || collaborationData.collaborators.length === 0) && (
+                                                            <div className={styles.emptyMessage}>
+                                                                <FormattedMessage {...messages.noMembers} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
                                             {/* Versions/Commits Section (only for collaborative projects) */}
                                             {selectedProject.project_type === 'collaborative' && !selectedProject.is_deleted && (
                                                 <div className={styles.versionsSection}>
@@ -797,6 +945,11 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                             <span className={styles.badge}>
                                                                 {collaborationData?.commits?.length || 0}
                                                             </span>
+                                                            {collaborationData?.working_copies && Object.keys(collaborationData.working_copies).length > 0 && (
+                                                                <span className={styles.workingCopyBadge}>
+                                                                    📝 {Object.keys(collaborationData.working_copies).length} <FormattedMessage {...messages.workingCopies} />
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     
@@ -807,28 +960,58 @@ const TeacherStudentsModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, intl 
                                                             </div>
                                                         )}
                                                         
-                                                        {!loadingCollabData && collaborationData?.commits?.map(commit => (
-                                                            <div key={commit.id} className={styles.versionItem}>
-                                                                <div className={styles.versionThumbnail}>
-                                                                    <img 
-                                                                        src={commit.thumbnail_url || '/static/images/default-project.png'}
-                                                                        alt={`Version ${commit.commit_number}`}
-                                                                        onError={(e) => {
-                                                                            e.target.src = '/static/default-thumbnail.png';
-                                                                            e.target.onerror = null;
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <div className={styles.versionContent}>
-                                                                    <div className={styles.versionTitle}>
-                                                                        ✓ #{commit.commit_number}: {commit.commit_message || 'No message'}
+                                                        {!loadingCollabData && collaborationData?.commits?.map(commit => {
+                                                            // ✅ Look up working copy by commit.project_id (the project representing this commit)
+                                                            // based_on_commit_id in WorkingCopy references the commit's project_id
+                                                            const workingCopy = collaborationData.working_copies?.[commit.project_id];
+                                                            return (
+                                                                <div key={commit.id} className={styles.versionItem}>
+                                                                    <div className={styles.versionThumbnail}>
+                                                                        <img 
+                                                                            src={commit.thumbnail_url || '/static/images/default-project.png'}
+                                                                            alt={`Version ${commit.commit_number}`}
+                                                                            onError={(e) => {
+                                                                                e.target.src = '/static/default-thumbnail.png';
+                                                                                e.target.onerror = null;
+                                                                            }}
+                                                                        />
                                                                     </div>
-                                                                    <div className={styles.versionMeta}>
-                                                                        {commit.committed_by} • {formatDate(commit.committed_at)}
+                                                                    <div className={styles.versionContent}>
+                                                                        <div className={styles.versionTitle}>
+                                                                            ✓ #{commit.commit_number}: {commit.commit_message || 'No message'}
+                                                                        </div>
+                                                                        <div className={styles.versionMeta}>
+                                                                            {commit.committed_by} • {formatDate(commit.committed_at)} {formatTime(commit.committed_at)}
+                                                                        </div>
+                                                                        {workingCopy && (
+                                                                            <div className={styles.workingCopyInfo}>
+                                                                                📝 <FormattedMessage {...messages.workingCopyExists} /> • <FormattedMessage {...messages.lastEdited} />: {formatDate(workingCopy.updated_at)} {formatTime(workingCopy.updated_at)}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className={styles.versionActions}>
+                                                                        <button 
+                                                                            className={styles.openVersionButton}
+                                                                            onClick={() => handleOpenProject(commit.project_id)}
+                                                                            disabled={loadingProject}
+                                                                            title="Open this version"
+                                                                        >
+                                                                            <FormattedMessage {...messages.openVersion} />
+                                                                        </button>
+                                                                        {workingCopy && (
+                                                                            <button 
+                                                                                className={styles.openWorkingCopyButton}
+                                                                                onClick={() => handleOpenProject(workingCopy.project_id)}
+                                                                                disabled={loadingProject}
+                                                                                title="Open working copy based on this version"
+                                                                            >
+                                                                                📝 <FormattedMessage {...messages.openWorkingCopy} />
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                         
                                                         {!loadingCollabData && (!collaborationData?.commits || collaborationData.commits.length === 0) && (
                                                             <div className={styles.emptyMessage}>

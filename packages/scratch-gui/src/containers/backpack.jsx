@@ -241,6 +241,8 @@ class Backpack extends React.Component {
                 onMouseEnter={this.handleMouseEnter}
                 onMouseLeave={this.handleMouseLeave}
                 onToggle={this.handleToggle}
+                ariaRole={this.props.ariaRole}
+                ariaLabel={this.props.ariaLabel}
             />
         );
     }
@@ -251,7 +253,9 @@ Backpack.propTypes = {
     host: PropTypes.string,
     token: PropTypes.string,
     username: PropTypes.string,
-    vm: PropTypes.instanceOf(VM)
+    vm: PropTypes.instanceOf(VM),
+    ariaRole: PropTypes.string,
+    ariaLabel: PropTypes.string
 };
 
 const getTokenAndUsername = state => {

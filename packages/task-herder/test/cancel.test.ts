@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TaskHerder, CancelReason } from '../src'
+import { TaskQueue, CancelReason } from '../src'
 import { waitTicks, makeTask } from './test-utilities'
 
 describe('cancel()', () => {
@@ -11,7 +11,7 @@ describe('cancel()', () => {
   })
 
   it('should cancel a pending task and return true', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 1, // allow first task to start immediately
       burstLimit: 5,
       sustainRate: 1, // slow refill so second stays pending initially
@@ -41,7 +41,7 @@ describe('cancel()', () => {
   })
 
   it('should return false when cancelling unknown promise', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 0,
       burstLimit: 5,
       sustainRate: 1000,
@@ -54,7 +54,7 @@ describe('cancel()', () => {
   })
 
   it('should cancel a pending task without disrupting the queue', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 1,
       burstLimit: 5,
       sustainRate: 1000,
@@ -103,7 +103,7 @@ describe('cancelAll()', () => {
   })
 
   it('should cancel all pending tasks and return their count', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 0,
       burstLimit: 5,
       sustainRate: 1,
@@ -152,7 +152,7 @@ describe('abortSignal option', () => {
   })
 
   it('should abort a pending task using abortSignal', async () => {
-    const bucket = new TaskHerder({
+    const bucket = new TaskQueue({
       startingTokens: 1,
       burstLimit: 5,
       sustainRate: 1,
@@ -161,7 +161,7 @@ describe('abortSignal option', () => {
     const states: Record<string, string> = {}
     const controller = new AbortController()
     const p1 = bucket.do(makeTask(states, 'task1', 5), { cost: 1 })
-    const p2 = bucket.do(makeTask(states, 'task2', 5), { cost: 2, abortSignal: controller.signal })
+    const p2 = bucket.do(makeTask(states, 'task2', 5), { cost: 2, signal: controller.signal })
 
     await waitTicks(1000)
     expect(states.task1).toEqual('started')

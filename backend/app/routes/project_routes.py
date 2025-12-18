@@ -10,6 +10,7 @@ from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
 from app.middlewares.auth import check_auth
+from app.utils.date_utils import to_iso_string
 from datetime import datetime, timezone
 from app import db
 from flask import Blueprint, request, current_app, jsonify, send_file, g
@@ -303,8 +304,8 @@ def update_project(user_info, project_id):
             'id': project.id,
             'title': project.name,
             'description': project.description,
-            'created_at': project.created_at.isoformat(),
-            'updated_at': project.updated_at.isoformat(),
+            'created_at': to_iso_string(project.created_at),
+            'updated_at': to_iso_string(project.updated_at),
             'is_working_copy': True,
             'has_changes': True,
             'success': True
@@ -561,8 +562,8 @@ def get_all_user_projects(user_info):
                 'description': proj.description,
                 'created_by': proj.created_by,
                 'creator_username': proj.creator.username if proj.creator else None,
-                'created_at': proj.created_at.isoformat(),
-                'updated_at': proj.updated_at.isoformat(),
+                'created_at': to_iso_string(proj.created_at),
+                'updated_at': to_iso_string(proj.updated_at),
                 'latest_commit_id': proj.latest_commit_id,
                 'is_collaborative': True,
                 'permission': permission.value if permission else None,
@@ -631,8 +632,8 @@ def get_owned_projects(user_info):
                     'description': proj.description,
                     'created_by': proj.created_by,
                     'creator_username': proj.creator.username if proj.creator else None,
-                    'created_at': proj.created_at.isoformat(),
-                    'updated_at': proj.updated_at.isoformat(),
+                    'created_at': to_iso_string(proj.created_at),
+                    'updated_at': to_iso_string(proj.updated_at),
                     'latest_commit_id': proj.latest_commit_id,
                     'is_collaborative': True,
                     'permission': permission.value if permission else None,
@@ -662,7 +663,7 @@ def get_owned_projects(user_info):
                     project_data['working_copy_has_changes'] = wc.has_changes
                     last_edited_at = max(last_edited_at, wc.updated_at)
                 
-                project_data['last_edited_at'] = last_edited_at.isoformat()
+                project_data['last_edited_at'] = to_iso_string(last_edited_at)
                 
                 # Get permissions (for display)
                 all_users_with_access = proj.get_all_users_with_access()
@@ -717,8 +718,8 @@ def get_collaboration_projects(user_info):
                         'description': proj.description,
                         'created_by': proj.created_by,
                         'creator_username': proj.creator.username if proj.creator else None,
-                        'created_at': proj.created_at.isoformat(),
-                        'updated_at': proj.updated_at.isoformat(),
+                        'created_at': to_iso_string(proj.created_at),
+                        'updated_at': to_iso_string(proj.updated_at),
                         'latest_commit_id': proj.latest_commit_id,
                         'is_collaborative': True,
                         'permission': permission.value,
@@ -748,7 +749,7 @@ def get_collaboration_projects(user_info):
                         project_data['working_copy_has_changes'] = wc.has_changes
                         last_edited_at = max(last_edited_at, wc.updated_at)
                     
-                    project_data['last_edited_at'] = last_edited_at.isoformat()
+                    project_data['last_edited_at'] = to_iso_string(last_edited_at)
                     
                     # Get permissions (for display)
                     all_users_with_access = proj.get_all_users_with_access()
@@ -820,9 +821,9 @@ def get_shared_projects(user_info):
                         'name': proj.name,
                         'title': proj.name,  # Alias for backwards compatibility
                         'description': proj.description,
-                        'created_at': proj.created_at.isoformat(),
-                        'updated_at': proj.updated_at.isoformat(),
-                        'last_edited_at': last_edited_at.isoformat(),
+                        'created_at': to_iso_string(proj.created_at),
+                        'updated_at': to_iso_string(proj.updated_at),
+                        'last_edited_at': to_iso_string(last_edited_at),
                         'thumbnail_url': thumbnail_url,
                         'latest_commit_id': proj.latest_commit_id,
                         'owner': {

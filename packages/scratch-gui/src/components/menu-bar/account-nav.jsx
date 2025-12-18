@@ -23,6 +23,7 @@ const AccountNavComponent = ({
     isRtl,
     menuBarMenuClassName,
     onClick,
+    onMouseDown,
     onClose,
     onLogOut,
     profileUrl,
@@ -31,7 +32,8 @@ const AccountNavComponent = ({
     myClassesUrl,
     myClassUrl,
     accountSettingsUrl,
-    username
+    username,
+    avatarBadge
 }) => (
     <React.Fragment>
         <div
@@ -40,11 +42,13 @@ const AccountNavComponent = ({
                 className
             )}
             onClick={onClick}
+            onMouseDown={onMouseDown}
         >
             {avatarUrl ? (
                 <UserAvatar
                     className={styles.avatar}
                     imageUrl={avatarUrl}
+                    showAvatarBadge={!!avatarBadge}
                 />
             ) : null}
             <span className={styles.profileName}>
@@ -139,10 +143,12 @@ AccountNavComponent.propTypes = {
     menuBarMenuClassName: PropTypes.string,
 
     onClick: PropTypes.func,
+    onMouseDown: PropTypes.func,
     onClose: PropTypes.func,
     onLogOut: PropTypes.func,
 
     username: PropTypes.string,
+    avatarBadge: PropTypes.number,
 
     avatarUrl: PropTypes.string,
     myStuffUrl: PropTypes.func,

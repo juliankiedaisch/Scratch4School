@@ -11,6 +11,7 @@ from app.models.projects import (
 from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
+from app.utils.date_utils import to_iso_string
 from datetime import datetime, timezone
 import os
 import shutil
@@ -714,8 +715,8 @@ def get_working_copy_info(user_info, collab_id):
             'collaborative_project_id': collab_id,
             'based_on_commit_id': wc.based_on_commit_id,
             'has_changes': wc.has_changes,
-            'updated_at': wc.updated_at.isoformat(),
-            'created_at': wc.created_at.isoformat(),
+            'updated_at': to_iso_string(wc.updated_at),
+            'created_at': to_iso_string(wc.created_at),
             'project_name': wc_project.name if wc_project else None,
             'success': True
         }), 200
@@ -885,6 +886,7 @@ def get_collaboration_data(user_info, collab_id):
     """
     Get all collaboration data in one call
     ✅ Uses permission system
+    ✅ Teachers can specify a student_id to get that student's working copies
     """
     try:
         user = User.query.get(user_info['user_id'])
@@ -900,6 +902,15 @@ def get_collaboration_data(user_info, collab_id):
         
         if not user_permission:
             user_permission = PermissionLevel.READ  # Default for admins/teachers without explicit permission
+        
+        # ✅ Allow teachers to specify a student_id to view their working copies
+        student_id = request.args.get('student_id')
+        target_user = user
+        
+        if student_id and user.role in ['admin', 'teacher']:
+            target_user = User.query.get(student_id)
+            if not target_user:
+                return jsonify({'error': 'Student not found'}), 404
         # Get commits
         commits = db.session.query(Commit)\
             .filter_by(collaborative_project_id=collab_id)\
@@ -957,8 +968,8 @@ def get_collaboration_data(user_info, collab_id):
                 'access_via': via,
                 'permission_id': group_data["permission_id"]
             })
-        # Get working copies
-        working_copies_dict = user.get_all_working_copies(collab_id)
+        # Get working copies (use target_user which could be student for teachers)
+        working_copies_dict = target_user.get_all_working_copies(collab_id)
         
         working_copies_formatted = {}
         for commit_id, wc in working_copies_dict.items():
@@ -966,8 +977,10 @@ def get_collaboration_data(user_info, collab_id):
                 'project_id': wc.project_id,
                 'based_on_commit_id': wc.based_on_commit_id,
                 'has_changes': wc.has_changes,
-                'updated_at': wc.updated_at.isoformat(),
-                'created_at': wc.created_at.isoformat()
+                'updated_at': to_iso_string(wc.updated_at),
+                'created_at': to_iso_string(wc.created_at),
+                'user_id': wc.user_id,
+                'user_name': target_user.username
             }
         
         return jsonify({

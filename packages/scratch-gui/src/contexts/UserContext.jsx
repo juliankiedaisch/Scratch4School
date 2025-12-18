@@ -99,20 +99,42 @@ export const UserProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    const login = useCallback(() => {
-        setLoading(true);
-        UserService.loginWithOAuth();
-    }, []);
-
     const resetProject = useCallback(() => {
         console.log('[UserContext] Resetting project data');
         setProjectId(null);
         setProjectTitle('Untitled Project');
         setProjectChanged(false);
+        setIsCollaborative(false);
+        setCollaborativeProjectId(null);
         
         const resetTime = new Date().toISOString();
         localStorage.setItem('project_reset_time', resetTime);
 
+    }, []);
+
+    // Listen for project loaded from file event
+    useEffect(() => {
+        const handleProjectLoadedFromFile = (event) => {
+            console.log('[UserContext] Project loaded from file, resetting project state');
+            // Use the same resetProject function for consistency
+            resetProject();
+            // Then update the title if provided
+            const title = event.detail?.title;
+            if (title) {
+                setProjectTitle(title);
+            }
+        };
+
+        document.addEventListener('projectLoadedFromFile', handleProjectLoadedFromFile);
+
+        return () => {
+            document.removeEventListener('projectLoadedFromFile', handleProjectLoadedFromFile);
+        };
+    }, [resetProject]);
+
+    const login = useCallback(() => {
+        setLoading(true);
+        UserService.loginWithOAuth();
     }, []);  
 
     const logout = useCallback(async () => {

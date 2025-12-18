@@ -148,6 +148,15 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                             this.props.onSetProjectTitle(uploadedProjectTitle);
                         }
                         loadingSuccess = true;
+                        
+                        // Dispatch event to reset UserContext (treat loaded project as new)
+                        const event = new CustomEvent('projectLoadedFromFile', {
+                            detail: {
+                                filename: filename,
+                                title: filename ? getProjectTitleFromFilename(filename) : 'Untitled Project'
+                            }
+                        });
+                        document.dispatchEvent(event);
                     })
                     .catch(error => {
                         log.warn(error);

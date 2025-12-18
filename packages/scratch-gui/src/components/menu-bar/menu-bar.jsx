@@ -236,6 +236,16 @@ class MenuBar extends React.Component {
         this.handleOpenProject = this.handleOpenProject.bind(this);
         this.saveManagerRef = React.createRef();
         this.pingInterval = null;
+        
+        // Flags to prevent race conditions when closing menus
+        this.menuClosingFlags = {
+            file: false,
+            edit: false,
+            mode: false,
+            about: false,
+            account: false,
+            settings: false
+        };
     }
 
     componentDidMount () {
@@ -494,7 +504,25 @@ class MenuBar extends React.Component {
                 className={classNames(styles.menuBarItem, styles.hoverable, {
                     [styles.active]: this.props.aboutMenuOpen
                 })}
-                onClick={this.props.onRequestOpenAbout}
+                onMouseDown={(e) => {
+                    if (this.props.aboutMenuOpen) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.menuClosingFlags.about = true;
+                        this.props.onRequestCloseAbout();
+                        setTimeout(() => { this.menuClosingFlags.about = false; }, 100);
+                    }
+                }}
+                onClick={(e) => {
+                    if (this.menuClosingFlags.about) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                    if (!this.props.aboutMenuOpen) {
+                        this.props.onRequestOpenAbout();
+                    }
+                }}
             >
                 <img
                     className={styles.aboutIcon}
@@ -675,6 +703,8 @@ class MenuBar extends React.Component {
                                 this.props.className,
                                 styles.menuBar
                             )}
+                            aria-label={this.props.ariaLabel}
+                            role={this.props.ariaRole}
                         >
                             <div className={styles.mainMenu}>
                                 <div className={styles.fileGroup}>
@@ -690,10 +720,32 @@ class MenuBar extends React.Component {
                                             onClick={this.props.onClickLogo}
                                         />
                                     </div>
-                                    {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
+                                    {(this.props.canChangeTheme || this.props.canChangeLanguage || this.props.canChangeTheme) && 
+                                    (<SettingsMenu
                                         canChangeLanguage={this.props.canChangeLanguage}
+                                        canChangeColorMode={this.props.canChangeColorMode}
                                         canChangeTheme={this.props.canChangeTheme}
+                                        hasActiveMembership={this.props.hasActiveMembership}
                                         isRtl={this.props.isRtl}
+                                        onMouseDown={(e) => {
+                                            if (this.props.settingsMenuOpen) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                this.menuClosingFlags.settings = true;
+                                                this.props.onRequestCloseSettings();
+                                                setTimeout(() => { this.menuClosingFlags.settings = false; }, 100);
+                                            }
+                                        }}
+                                        onClick={(e) => {
+                                            if (this.menuClosingFlags.settings) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                return;
+                                            }
+                                            if (!this.props.settingsMenuOpen) {
+                                                this.props.onClickSettings();
+                                            }
+                                        }}
                                         onRequestClose={this.props.onRequestCloseSettings}
                                         onRequestOpen={this.props.onClickSettings}
                                         settingsMenuOpen={this.props.settingsMenuOpen}
@@ -703,17 +755,39 @@ class MenuBar extends React.Component {
                                             className={classNames(styles.menuBarItem, styles.hoverable, {
                                                 [styles.active]: this.props.fileMenuOpen
                                             })}
-                                            onClick={this.props.onClickFile}
                                         >
-                                            <img src={fileIcon} />
-                                            <span className={styles.collapsibleLabel}>
-                                                <FormattedMessage
-                                                    defaultMessage="File"
-                                                    description="Text for file dropdown menu"
-                                                    id="gui.menuBar.file"
-                                                />
-                                            </span>
-                                            <img src={dropdownCaret} />
+                                            <div
+                                                className={styles.menuTrigger}
+                                                onMouseDown={(e) => {
+                                                    if (this.props.fileMenuOpen) {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        this.menuClosingFlags.file = true;
+                                                        this.props.onRequestCloseFile();
+                                                        setTimeout(() => { this.menuClosingFlags.file = false; }, 100);
+                                                    }
+                                                }}
+                                                onClick={(e) => {
+                                                    if (this.menuClosingFlags.file) {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        return;
+                                                    }
+                                                    if (!this.props.fileMenuOpen) {
+                                                        this.props.onClickFile();
+                                                    }
+                                                }}
+                                            >
+                                                <img src={fileIcon} />
+                                                <span className={styles.collapsibleLabel}>
+                                                    <FormattedMessage
+                                                        defaultMessage="File"
+                                                        description="Text for file dropdown menu"
+                                                        id="gui.menuBar.file"
+                                                    />
+                                                </span>
+                                                <img src={dropdownCaret} />
+                                            </div>
                                             <MenuBarMenu
                                                 className={classNames(styles.menuBarMenu)}
                                                 open={this.props.fileMenuOpen}
@@ -777,17 +851,39 @@ class MenuBar extends React.Component {
                                         className={classNames(styles.menuBarItem, styles.hoverable, {
                                             [styles.active]: this.props.editMenuOpen
                                         })}
-                                        onClick={this.props.onClickEdit}
                                     >
-                                        <img src={editIcon} />
-                                        <span className={styles.collapsibleLabel}>
-                                            <FormattedMessage
-                                                defaultMessage="Edit"
-                                                description="Text for edit dropdown menu"
-                                                id="gui.menuBar.edit"
-                                            />
-                                        </span>
-                                        <img src={dropdownCaret} />
+                                        <div
+                                            className={styles.menuTrigger}
+                                            onMouseDown={(e) => {
+                                                if (this.props.editMenuOpen) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    this.menuClosingFlags.edit = true;
+                                                    this.props.onRequestCloseEdit();
+                                                    setTimeout(() => { this.menuClosingFlags.edit = false; }, 100);
+                                                }
+                                            }}
+                                            onClick={(e) => {
+                                                if (this.menuClosingFlags.edit) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    return;
+                                                }
+                                                if (!this.props.editMenuOpen) {
+                                                    this.props.onClickEdit();
+                                                }
+                                            }}
+                                        >
+                                            <img src={editIcon} />
+                                            <span className={styles.collapsibleLabel}>
+                                                <FormattedMessage
+                                                    defaultMessage="Edit"
+                                                    description="Text for edit dropdown menu"
+                                                    id="gui.menuBar.edit"
+                                                />
+                                            </span>
+                                            <img src={dropdownCaret} />
+                                        </div>
                                         <MenuBarMenu
                                             className={classNames(styles.menuBarMenu)}
                                             open={this.props.editMenuOpen}
@@ -829,14 +925,36 @@ class MenuBar extends React.Component {
                                             className={classNames(styles.menuBarItem, styles.hoverable, {
                                                 [styles.active]: this.props.modeMenuOpen
                                             })}
-                                            onClick={this.props.onClickMode}
                                         >
-                                            <div className={classNames(styles.editMenu)}>
-                                                <FormattedMessage
-                                                    defaultMessage="Mode"
-                                                    description="Mode menu item in the menu bar"
-                                                    id="gui.menuBar.modeMenu"
-                                                />
+                                            <div
+                                                className={styles.menuTrigger}
+                                                onMouseDown={(e) => {
+                                                    if (this.props.modeMenuOpen) {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        this.menuClosingFlags.mode = true;
+                                                        this.props.onRequestCloseMode();
+                                                        setTimeout(() => { this.menuClosingFlags.mode = false; }, 100);
+                                                    }
+                                                }}
+                                                onClick={(e) => {
+                                                    if (this.menuClosingFlags.mode) {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        return;
+                                                    }
+                                                    if (!this.props.modeMenuOpen) {
+                                                        this.props.onClickMode();
+                                                    }
+                                                }}
+                                            >
+                                                <div className={classNames(styles.editMenu)}>
+                                                    <FormattedMessage
+                                                        defaultMessage="Mode"
+                                                        description="Mode menu item in the menu bar"
+                                                        id="gui.menuBar.modeMenu"
+                                                    />
+                                                </div>
                                             </div>
                                             <MenuBarMenu
                                                 className={classNames(styles.menuBarMenu)}
@@ -969,13 +1087,32 @@ class MenuBar extends React.Component {
     
                                             menuBarMenuClassName={classNames(styles.menuBarMenu)}
     
-                                            onClick={this.props.onClickAccount}
+                                            onMouseDown={(e) => {
+                                                if (this.props.accountMenuOpen) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    this.menuClosingFlags.account = true;
+                                                    this.props.onRequestCloseAccount();
+                                                    setTimeout(() => { this.menuClosingFlags.account = false; }, 100);
+                                                }
+                                            }}
+                                            onClick={(e) => {
+                                                if (this.menuClosingFlags.account) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    return;
+                                                }
+                                                if (!this.props.accountMenuOpen) {
+                                                    this.props.onClickAccount();
+                                                }
+                                            }}
                                             onClose={this.props.onRequestCloseAccount}
                                             // Use our OAuth logout function
                                             onLogOut={userContext.logout}
     
                                             // Use username from OAuth currentUser
                                             username={currentUser.username}
+                                            avatarBadge={this.props.avatarBadge}
     
                                             // Pass through available menu options
                                             myStuffUrl={this.handleShowCollaborationModal}
@@ -1073,11 +1210,15 @@ class MenuBar extends React.Component {
 MenuBar.propTypes = {
     aboutMenuOpen: PropTypes.bool,
     accountMenuOpen: PropTypes.bool,
+    ariaLabel: PropTypes.string,
+    ariaRole: PropTypes.string,
     authorId: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
     authorThumbnailUrl: PropTypes.string,
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
+    authorAvatarBadge: PropTypes.number,
     autoUpdateProject: PropTypes.func,
     canChangeLanguage: PropTypes.bool,
+    canChangeColorMode: PropTypes.bool,
     canChangeTheme: PropTypes.bool,
     canCreateCopy: PropTypes.bool,
     canCreateNew: PropTypes.bool,
@@ -1092,6 +1233,7 @@ MenuBar.propTypes = {
     editMenuOpen: PropTypes.bool,
     enableCommunity: PropTypes.bool,
     fileMenuOpen: PropTypes.bool,
+    hasActiveMembership: PropTypes.bool,
     intl: intlShape,
     isRtl: PropTypes.bool,
     isShared: PropTypes.bool,
@@ -1154,6 +1296,7 @@ MenuBar.propTypes = {
     shouldSaveBeforeTransition: PropTypes.func,
     showComingSoon: PropTypes.bool,
     username: PropTypes.string,
+    avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,
     accountMenuOptions: AccountMenuOptionsPropTypes,
     vm: PropTypes.instanceOf(VM).isRequired
@@ -1187,6 +1330,7 @@ const mapStateToProps = (state, ownProps) => {
         projectId: state.scratchGui.projectState.projectId,
         settingsMenuOpen: settingsMenuOpen(state),
         username: ownProps.username ?? (user ? user.username : null),
+        avatarBadge: user ? user.membership_avatar_badge : null,
         userIsEducator: permissions && permissions.educator,
         vm: state.scratchGui.vm,
         mode220022BC: isTimeTravel220022BC(state),

@@ -394,11 +394,18 @@ export const loadRecentProject = async (vm, options = {}) => {
 // ============================================================
 
 /**
- * Fetch all collaboration data for a project
+ * Fetch all collaboration data (commits, collaborators, working copies)
  * Returns: { commits, collaborators, working_copies, user_permission }
+ * @param {number} collabProjectId - The collaborative project ID
+ * @param {string} studentId - Optional: For teachers to view a specific student's working copies
  */
-export const fetchCollaborationData = async (collabProjectId) => {
-    const response = await fetch(`${COLLAB_BASE}/${collabProjectId}/data`, {
+export const fetchCollaborationData = async (collabProjectId, studentId = null) => {
+    const url = new URL(`${COLLAB_BASE}/${collabProjectId}/data`, window.location.origin);
+    if (studentId) {
+        url.searchParams.append('student_id', studentId);
+    }
+    
+    const response = await fetch(url.toString(), {
         method: 'GET',
         headers: getAuthHeaders()
     });

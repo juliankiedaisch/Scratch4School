@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, current_app
 from app.models.users import User
 from app.models.projects import Project, Commit, WorkingCopy, CollaborativeProject
 from app.middlewares.auth import require_auth, require_teacher
+from app.utils.date_utils import to_iso_string
 from app import db
 import os
 
@@ -98,9 +99,24 @@ def get_student_projects(user_info, student_id):
         
         include_deleted = request.args.get('include_deleted', 'true').lower() == 'true'
         
+        # ============================================================
+        # GET NORMAL PROJECTS (owned by student)
+        # ============================================================
+        
+        normal_query = Project.query.filter_by(owner_id=student.id)
+        
+        # Exclude projects that are commits or working copies
+        normal_query = normal_query.outerjoin(Commit, Project.id == Commit.project_id)
+        normal_query = normal_query.outerjoin(WorkingCopy, Project.id == WorkingCopy.project_id)
+        normal_query = normal_query.filter(Commit.id == None, WorkingCopy.id == None)
+        
+        if not include_deleted:
+            normal_query = normal_query.filter(Project.deleted_at == None)
+        
+        normal_projects = normal_query.all()
 
         # ============================================================
-        # GET COLLABORATIVE PROJECTS
+        # GET COLLABORATIVE PROJECTS (owned by student)
         # ============================================================
         
         collab_query = CollaborativeProject.query.filter_by(created_by=student.id)
@@ -108,20 +124,64 @@ def get_student_projects(user_info, student_id):
         if not include_deleted:
             collab_query = collab_query.filter(CollaborativeProject.deleted_at == None)
         
-        collab_projects = collab_query.all()
+        collab_projects_owned = collab_query.all()
+        
+        # ============================================================
+        # GET COLLABORATIVE PROJECTS (where student is a collaborator with WRITE access)
+        # ============================================================
+        
+        from app.models.projects import CollaborativeProjectPermission, PermissionLevel
+        
+        collab_as_collaborator_query = db.session.query(CollaborativeProject).join(
+            CollaborativeProjectPermission,
+            CollaborativeProject.id == CollaborativeProjectPermission.collaborative_project_id
+        ).filter(
+            CollaborativeProjectPermission.user_id == student.id,
+            CollaborativeProjectPermission.permission == PermissionLevel.WRITE,
+            CollaborativeProject.created_by != student.id  # Don't duplicate owned projects
+        )
+        
+        if not include_deleted:
+            collab_as_collaborator_query = collab_as_collaborator_query.filter(
+                CollaborativeProject.deleted_at == None
+            )
+        
+        collab_projects_collaborator = collab_as_collaborator_query.all()
         
         # ============================================================
         # FORMAT RESPONSE
         # ============================================================
         
         projects_data = []
-        # Add collaborative projects
-        for collab in collab_projects:
-            collab_dict = collab.to_dict(include_commits=True)
+        
+        # Add normal projects
+        for project in normal_projects:
+            project_dict = project.to_dict()
+            project_dict['project_type'] = 'normal'
+            project_dict['is_deleted'] = project.is_deleted
+            project_dict['deleted_at'] = to_iso_string(project.deleted_at) if project.deleted_at else None
+            project_dict['deleted_by'] = project.deleted_by
+            project_dict['last_edited_at'] = to_iso_string(project.updated_at)
+            project_dict['is_collaborator'] = False  # Student is owner
+            projects_data.append(project_dict)
+        
+        # Add collaborative projects (owned by student)
+        for collab in collab_projects_owned:
+            collab_dict = collab.to_dict(include_commits=False)
             collab_dict['project_type'] = 'collaborative'
             collab_dict['is_deleted'] = collab.is_deleted
-            collab_dict['deleted_at'] = collab.deleted_at.isoformat() if collab.deleted_at else None
+            collab_dict['deleted_at'] = to_iso_string(collab.deleted_at) if collab.deleted_at else None
             collab_dict['deleted_by'] = collab.deleted_by
+            collab_dict['is_collaborator'] = False  # Student is owner
+            
+            # Count users with write/admin access
+            all_users_with_access = collab.get_all_users_with_access()
+            write_admin_count = sum(1 for user_data in all_users_with_access 
+                                   if user_data['permission'] in [PermissionLevel.WRITE, PermissionLevel.ADMIN])
+            collab_dict['write_admin_count'] = write_admin_count
+            
+            # Add commit count
+            collab_dict['commit_count'] = len(collab.commits)
             
             # Calculate last_edited_at from latest commit or any working copy
             last_edited_at = collab.created_at  # Default to creation time
@@ -146,11 +206,61 @@ def get_student_projects(user_info, student_id):
             for wc in working_copies:
                 last_edited_at = max(last_edited_at, wc.updated_at)
             
-            collab_dict['last_edited_at'] = last_edited_at.isoformat()
+            collab_dict['last_edited_at'] = to_iso_string(last_edited_at)
             
             projects_data.append(collab_dict)
         
-        # Sort by last_edited_at descending (most recent first)
+        # Add collaborative projects (where student is a collaborator)
+        for collab in collab_projects_collaborator:
+            collab_dict = collab.to_dict(include_commits=False)
+            collab_dict['project_type'] = 'collaborative'
+            collab_dict['is_deleted'] = collab.is_deleted
+            collab_dict['deleted_at'] = to_iso_string(collab.deleted_at) if collab.deleted_at else None
+            collab_dict['deleted_by'] = collab.deleted_by
+            collab_dict['is_collaborator'] = True  # Student is collaborator, not owner
+            
+            # Get the owner's username for display
+            owner = User.query.get(collab.created_by)
+            if owner:
+                collab_dict['owner_username'] = owner.username
+            
+            # Count users with write/admin access
+            all_users_with_access = collab.get_all_users_with_access()
+            write_admin_count = sum(1 for user_data in all_users_with_access 
+                                   if user_data['permission'] in [PermissionLevel.WRITE, PermissionLevel.ADMIN])
+            collab_dict['write_admin_count'] = write_admin_count
+            
+            # Add commit count
+            collab_dict['commit_count'] = len(collab.commits)
+            
+            # Calculate last_edited_at from latest commit or any working copy
+            last_edited_at = collab.created_at  # Default to creation time
+            
+            # Check latest commit time
+            if collab.latest_commit_id:
+                latest_commit = Commit.query.filter_by(
+                    collaborative_project_id=collab.id
+                ).order_by(Commit.committed_at.desc()).first()
+                
+                if latest_commit:
+                    last_edited_at = max(last_edited_at, latest_commit.committed_at)
+                    latest_commit_project = Project.query.get(collab.latest_commit_id)
+                    if latest_commit_project:
+                        collab_dict['thumbnail_url'] = latest_commit_project.thumbnail_url
+            
+            # Check all working copies times (not just student's)
+            working_copies = WorkingCopy.query.filter_by(
+                collaborative_project_id=collab.id
+            ).all()
+            
+            for wc in working_copies:
+                last_edited_at = max(last_edited_at, wc.updated_at)
+            
+            collab_dict['last_edited_at'] = to_iso_string(last_edited_at)
+            
+            projects_data.append(collab_dict)
+        
+        # Sort projects by last_edited_at (newest first)
         projects_data.sort(
             key=lambda p: p.get('last_edited_at') or p.get('updated_at') or p.get('created_at'),
             reverse=True

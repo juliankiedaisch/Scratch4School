@@ -73,6 +73,12 @@
     background-color: $ui-black-transparent;
 }
 
+.menu-trigger {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
 .menu-bar-item.growable {
     max-width: $menu-bar-item-max-width;
     flex: 1;

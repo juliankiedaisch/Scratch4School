@@ -719,6 +719,59 @@
     color: $text-primary;
 }
 
+/* Members Section */
+.members-section {
+    margin-top: 24px;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid $ui-tertiary;
+    border-radius: 6px;
+    background-color: white;
+}
+
+.member-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: $text-primary;
+}
+
+.member-role {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background-color: #e8f4fd;
+    color: #0d7fc1;
+}
+
+.member-role:has(:contains("Admin")) {
+    background-color: #ffe8e8;
+    color: #d94848;
+}
+
+.member-role:has(:contains("Write")) {
+    background-color: #fff4e8;
+    color: #ff8c1a;
+}
+
 /* Versions Section */
 .versions-section {
     margin-top: 24px;
@@ -794,11 +847,35 @@
     font-size: 0.95rem;
     color: $text-primary;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.working-copy-indicator {
+    font-size: 0.75rem;
+    color: #ff8c1a;
+    font-weight: 600;
 }
 
 .version-meta {
     font-size: 0.8rem;
     color: $text-primary-transparent;
+    margin-bottom: 4px;
+}
+
+.working-copy-info {
+    font-size: 0.75rem;
+    color: #ff8c1a;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.version-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 12px;
 }
 
 .empty-message {
@@ -806,4 +883,70 @@
     padding: 40px;
     color: $text-primary-transparent;
     font-style: italic;
+}
+
+/* Collaborator indicators */
+.collaborator-indicator {
+    margin-left: 8px;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.collaborator-badge {
+    margin-left: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.owner-badge {
+    padding: 2px 6px;
+    border-radius: 3px;
+    background-color: rgba(156, 39, 176, 0.15);
+    color: #9c27b0;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.owner-info {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(156, 39, 176, 0.15);
+    color: #9c27b0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+/* Working Copies Section */
+/* Open buttons for versions and working copies */
+.open-version-button,
+.open-working-copy-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: $motion-primary;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.open-version-button:hover,
+.open-working-copy-button:hover {
+    background-color: #4a90d9;
+}
+
+.open-version-button:disabled,
+.open-working-copy-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }

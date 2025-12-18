@@ -40,19 +40,21 @@ const labelMap = defineMessages({
 });
 
 const Backpack = ({
-    blockDragOver,
+    ariaLabel,
+    ariaRole,
+    blockDragOver = false,
     containerRef,
-    contents,
-    dragOver,
+    contents = [],
+    dragOver = false,
     error,
-    expanded,
-    loading,
-    showMore,
-    onToggle,
+    expanded = false,
+    loading = false,
+    showMore = false,
+    onToggle = null,
     onDelete,
     onMouseEnter,
     onMouseLeave,
-    onMore
+    onMore = null
 }) => {
     const intl = useIntl();
     // Local state for expansion when onToggle is not provided
@@ -77,7 +79,11 @@ const Backpack = ({
     };
 
     return (
-        <div className={styles.backpackContainer}>
+        <div
+            className={styles.backpackContainer}
+            role={ariaRole}
+            aria-label={ariaLabel}
+        >
             <div
                 className={styles.backpackHeader}
                 onClick={handleToggle}
@@ -163,6 +169,8 @@ const Backpack = ({
 };
 
 Backpack.propTypes = {
+    ariaLabel: PropTypes.string,
+    ariaRole: PropTypes.string,
     blockDragOver: PropTypes.bool,
     containerRef: PropTypes.func,
     contents: PropTypes.arrayOf(PropTypes.shape({
@@ -181,17 +189,6 @@ Backpack.propTypes = {
     onMouseLeave: PropTypes.func,
     onToggle: PropTypes.func,
     showMore: PropTypes.bool
-};
-
-Backpack.defaultProps = {
-    blockDragOver: false,
-    contents: [],
-    dragOver: false,
-    expanded: false,
-    loading: false,
-    showMore: false,
-    onMore: null,
-    onToggle: null
 };
 
 export default Backpack;

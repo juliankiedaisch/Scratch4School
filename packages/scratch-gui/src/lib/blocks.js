@@ -7,7 +7,12 @@
 export default function (vm, useCatBlocks) {
     const ScratchBlocks = require('scratch-blocks');
 
-    ScratchBlocks.useCatBlocks = useCatBlocks;
+    // TODO: Set theme from editor settings
+    if (useCatBlocks) {
+        ScratchBlocks.setTheme(ScratchBlocks.Themes.CAT_BLOCKS);
+    } else {
+        ScratchBlocks.setTheme(ScratchBlocks.Themes.CLASSIC);
+    }
     
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {

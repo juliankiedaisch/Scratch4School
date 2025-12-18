@@ -995,15 +995,15 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
     const formatDate = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
         
-        if (diffMins < 1) return 'gerade eben';
-        if (diffMins < 60) return `vor ${diffMins} Min`;
-        if (diffMins < 1440) return `vor ${Math.floor(diffMins / 60)} Std`;
+        // Format: DD.MM.YYYY HH:MM
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
         
-        return date.toLocaleDateString();
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
     };
     
     const getProjectBadges = (project) => {

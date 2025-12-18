@@ -385,12 +385,37 @@ class VirtualMachine extends EventEmitter {
     }
 
     /**
-     * @returns {string} Project in a Scratch 3.0 JSON representation.
+     * Saves the project as a Scratch 3.0 SB3 file with validation.
+     * @returns {Promise<Blob>} Promise that resolves to a Blob containing the SB3 project file.
      */
     saveProjectSb3 () {
+        // Minimum size for a valid Scratch project JSON (basic structure with stage)
+        const MIN_PROJECT_JSON_SIZE = 50;
+        // Minimum size for a valid SB3 file (compressed zip with project.json)
+        const MIN_SB3_FILE_SIZE = 200;
+
+        // Validate that we have a valid project before saving
+        const stage = this.runtime.getTargetForStage();
+        if (!stage) {
+            log.error('saveProjectSb3: Cannot save project - no stage target exists');
+            return Promise.reject(new Error('Cannot save project: No stage target exists. The project may be corrupted.'));
+        }
+
+        // Validate that we have at least the stage target
+        if (!this.runtime.targets || this.runtime.targets.length === 0) {
+            log.error('saveProjectSb3: Cannot save project - no targets exist');
+            return Promise.reject(new Error('Cannot save project: No targets exist. The project may be corrupted.'));
+        }
+
         const soundDescs = serializeSounds(this.runtime);
         const costumeDescs = serializeCostumes(this.runtime);
         const projectJson = this.toJSON();
+
+        // Validate that projectJson is valid and has minimum content
+        if (!projectJson || projectJson.length < MIN_PROJECT_JSON_SIZE) {
+            log.error('saveProjectSb3: Invalid project JSON generated');
+            return Promise.reject(new Error('Cannot save project: Invalid project data generated.'));
+        }
 
         // TODO want to eventually move zip creation out of here, and perhaps
         // into scratch-storage
@@ -407,6 +432,13 @@ class VirtualMachine extends EventEmitter {
             compressionOptions: {
                 level: 6 // Tradeoff between best speed (1) and best compression (9)
             }
+        }).then(blob => {
+            // Validate the generated blob meets minimum size for a valid SB3
+            if (!blob || blob.size < MIN_SB3_FILE_SIZE) {
+                log.error('saveProjectSb3: Generated SB3 file is too small', blob ? blob.size : 0);
+                return Promise.reject(new Error('Cannot save project: Generated file is invalid or too small.'));
+            }
+            return blob;
         });
     }
 
@@ -540,6 +572,11 @@ class VirtualMachine extends EventEmitter {
         targets = targets.filter(target => !!target);
 
         return Promise.all(extensionPromises).then(() => {
+            // Check if we have at least a stage target for whole projects
+            if (wholeProject && targets.length === 0) {
+                return Promise.reject(new Error('Project contains no valid targets'));
+            }
+
             targets.forEach(target => {
                 this.runtime.addTarget(target);
                 (/** @type RenderedTarget */ target).updateAllDrawableProperties();
@@ -568,7 +605,12 @@ class VirtualMachine extends EventEmitter {
             this.emitTargetsUpdate(false /* Don't emit project change */);
             this.emitWorkspaceUpdate();
             this.runtime.setEditingTarget(this.editingTarget);
-            this.runtime.ioDevices.cloud.setStage(this.runtime.getTargetForStage());
+            
+            // Set cloud stage if available
+            const cloudStage = this.runtime.getTargetForStage();
+            if (cloudStage) {
+                this.runtime.ioDevices.cloud.setStage(cloudStage);
+            }
         });
     }
 
@@ -994,6 +1036,9 @@ class VirtualMachine extends EventEmitter {
     addBackdrop (md5ext, backdropObject) {
         return loadCostume(md5ext, backdropObject, this.runtime).then(() => {
             const stage = this.runtime.getTargetForStage();
+            if (!stage) {
+                return Promise.reject(new Error('No stage target available'));
+            }
             stage.addCostume(backdropObject);
             stage.setCostume(stage.getCostumes().length - 1);
             this.runtime.emitProjectChanged();
@@ -1206,7 +1251,10 @@ class VirtualMachine extends EventEmitter {
         // Filter events by type, since blocks only needs to listen to these
         // var events.
         if (['var_create', 'var_rename', 'var_delete'].indexOf(e.type) !== -1) {
-            this.runtime.getTargetForStage().blocks.blocklyListen(e);
+            const stage = this.runtime.getTargetForStage();
+            if (stage) {
+                stage.blocks.blocklyListen(e);
+            }
         }
     }
 
@@ -1367,8 +1415,17 @@ class VirtualMachine extends EventEmitter {
      * of the current editing target's blocks.
      */
     emitWorkspaceUpdate () {
+        // Get the stage target
+        const stage = this.runtime.getTargetForStage();
+        
+        // If there's no stage (e.g., corrupted project), abort workspace update
+        if (!stage) {
+            log.warn('emitWorkspaceUpdate: No stage target available, skipping workspace update');
+            return;
+        }
+        
         // Create a list of broadcast message Ids according to the stage variables
-        const stageVariables = this.runtime.getTargetForStage().variables;
+        const stageVariables = stage.variables;
         let messageIds = [];
         for (const varId in stageVariables) {
             if (stageVariables[varId].type === Variable.BROADCAST_MESSAGE_TYPE) {
@@ -1394,9 +1451,9 @@ class VirtualMachine extends EventEmitter {
         // Anything left in messageIds is not referenced by a block, so delete it.
         for (let i = 0; i < messageIds.length; i++) {
             const id = messageIds[i];
-            delete this.runtime.getTargetForStage().variables[id];
+            delete stage.variables[id];
         }
-        const globalVarMap = Object.assign({}, this.runtime.getTargetForStage().variables);
+        const globalVarMap = Object.assign({}, stage.variables);
         const localVarMap = this.editingTarget.isStage ?
             Object.create(null) :
             Object.assign({}, this.editingTarget.variables);

@@ -101,6 +101,19 @@
   "gui.teacherStudentsModal.projectDetails": "Projektdetails",
   "gui.teacherStudentsModal.collaborativeProject": "Kollaboratives Projekt",
   "gui.teacherStudentsModal.normalProject": "Normales Projekt",
+  "gui.teacherStudentsModal.collaboratorBadge": "Mitarbeiter",
+  "gui.teacherStudentsModal.ownedBy": "Besitzer: {owner}",
+  "gui.teacherStudentsModal.workingCopies": "Arbeitskopien",
+  "gui.teacherStudentsModal.openVersion": "Öffnen",
+  "gui.teacherStudentsModal.openWorkingCopy": "Öffnen",
+  "gui.teacherStudentsModal.noWorkingCopies": "Noch keine Arbeitskopien",
+  "gui.teacherStudentsModal.workingCopyExists": "Arbeitskopie vorhanden",
+  "gui.teacherStudentsModal.members": "Mitglieder",
+  "gui.teacherStudentsModal.roleRead": "Lesen",
+  "gui.teacherStudentsModal.roleWrite": "Schreiben",
+  "gui.teacherStudentsModal.roleAdmin": "Admin",
+  "gui.teacherStudentsModal.noMembers": "Keine weiteren Mitglieder",
+  "gui.teacherStudentsModal.lastEdited": "Zuletzt bearbeitet",
 
 
   "gui.collaborationModal.title": "Meine Projekte",
@@ -203,6 +216,12 @@
   "gui.loginScreen.logoalt": "Scratch Logo",
   "gui.loginScreen.description": "Bitte melde dich an, um fortzufahren.",
   "gui.loginScreen.loading": "Lade ...",
-  "gui.loginScreen.button": "Anmelden mit SSO"
+  "gui.loginScreen.button": "Anmelden mit SSO",
+
+  "gui.sharedMessages.loadFromComputerTitle": "Von deinem Computer laden",
+  "gui.sharedMessages.backdrop": "Lager{index}",
+  "gui.sharedMessages.pop": "pop",
+  "gui.sharedMessages.sprite": "Figur{index}",
+  "gui.sharedMessages.costume": "Kostüm{index}"
 
 }

@@ -1,5 +1,6 @@
 import { eslintConfigScratch } from 'eslint-config-scratch'
 import { globalIgnores } from 'eslint/config'
+import globals from 'globals'
 
 export default eslintConfigScratch.defineConfig(
   eslintConfigScratch.recommended,
@@ -12,5 +13,11 @@ export default eslintConfigScratch.defineConfig(
       },
     },
   },
-  globalIgnores(['dist/**', 'node_modules/**']),
+  {
+    files: ['*'], // files in the root of the package (not subdirectories)
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  globalIgnores(['coverage/**', 'dist/**', 'node_modules/**']),
 )

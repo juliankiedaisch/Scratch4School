@@ -1,6 +1,7 @@
 from flask import Blueprint, redirect, session, url_for, jsonify, request, current_app
 from app import oauth, db
 from app.models.oauth_session import OAuthSession
+from app.utils.date_utils import to_iso_string
 from werkzeug.exceptions import Unauthorized
 from datetime import datetime, timezone
 import secrets  # Add this import for generating secure random strings
@@ -170,7 +171,7 @@ def get_session():
     return jsonify({
         'session': {
             'id': oauth_session.id,
-            'expires_at': oauth_session.expires_at.isoformat()
+            'expires_at': to_iso_string(oauth_session.expires_at)
         },
         'user': {
             'id': user.id,

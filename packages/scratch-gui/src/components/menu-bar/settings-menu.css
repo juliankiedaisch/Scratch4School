@@ -2,7 +2,8 @@
     width: 1.5rem;
 }
 
-.theme-label {
+/* Unused? */
+.color-mode-label {
     flex: 1;
 }
 
@@ -35,6 +36,12 @@
 
 [dir="rtl"] .dropdown-label {
     margin: 0 0.25rem 0 0.5rem;
+}
+
+.settings-trigger {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
 }
 
 .expand-caret {

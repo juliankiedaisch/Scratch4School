@@ -19,6 +19,7 @@ $ui-green-2: hsla(163, 85%, 40%, 1); /* #0FBD8C */
 $ui-blue: hsla(215, 100%, 65%, 1); /* #4C97FF */
 $ui-blue-10percent: hsla(215, 100%, 65%, 0.10); 
 
+$ui-orange: hsla(37, 96%, 55%, 1); /* #FAA51D */
 $text-primary: hsla(225, 15%, 40%, 1); /* #575E75 */
 $text-primary-transparent: hsla(225, 15%, 40%, 0.75);
 

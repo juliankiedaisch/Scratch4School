@@ -85,6 +85,32 @@ export default function (projectHost, projectId, vm, params) {
             }
         }
         
+        // Validate SB3 file size - minimum 200 bytes for a valid Scratch project
+        const MIN_VALID_PROJECT_SIZE = 500;
+        if (sb3Data.size < MIN_VALID_PROJECT_SIZE) {
+            console.error(`[saveProjectToServer] SB3 file too small (${sb3Data.size} bytes), rejecting to prevent data corruption`);
+            return Promise.reject(new Error(`Project file is too small (${sb3Data.size} bytes). Cannot save to prevent overwriting valid data.`));
+        }
+        
+        // Log if file seems suspiciously small (less than 1KB) but still above minimum
+        if (sb3Data.size < 1000) {
+            console.warn(`[saveProjectToServer] SB3 file is unusually small (${sb3Data.size} bytes), but above minimum threshold`);
+        }
+        
+        // Validate thumbnail and determine if it should be included
+        const MIN_THUMBNAIL_SIZE = 100;
+        let validThumbnail = null;
+        if (thumbnailBase64) {
+            // Check that thumbnail is not empty or too small
+            if (thumbnailBase64.length < MIN_THUMBNAIL_SIZE) {
+                console.warn(`[saveProjectToServer] Thumbnail data is suspiciously small (${thumbnailBase64.length} chars), continuing without thumbnail`);
+            } else {
+                validThumbnail = thumbnailBase64;
+            }
+        } else {
+            console.warn('[saveProjectToServer] No thumbnail captured - project will be saved without thumbnail');
+        }
+        
         // Create FormData object to upload the file
         const formData = new FormData();
         
@@ -93,14 +119,16 @@ export default function (projectHost, projectId, vm, params) {
         const filename = `project-${timestamp}.sb3`;
         formData.append('project_file', sb3Data, filename);
 
-        // Add thumbnail if available
-        if (thumbnailBase64) {
+        // Add thumbnail if available and valid
+        if (validThumbnail) {
             //console.log('[saveProjectToServer] Adding thumbnail to form data');
-            const thumbnailBlob = base64ToBlob(thumbnailBase64);
-            const thumbnailFileName = `thumbnail-${timestamp}.png`;
-            formData.append('thumbnail', thumbnailBlob, thumbnailFileName);
-        } else {
-            console.log('[saveProjectToServer] No thumbnail captured');
+            const thumbnailBlob = base64ToBlob(validThumbnail);
+            if (thumbnailBlob && thumbnailBlob.size > 0) {
+                const thumbnailFileName = `thumbnail-${timestamp}.png`;
+                formData.append('thumbnail', thumbnailBlob, thumbnailFileName);
+            } else {
+                console.warn('[saveProjectToServer] Failed to convert thumbnail to blob');
+            }
         }
         
         //console.log(`[saveProjectToServer] Sending SB3 file "${filename}" to server (${sb3Data.size} bytes)`);
