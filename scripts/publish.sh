@@ -5,9 +5,9 @@ set -euo pipefail
 SOURCE_BRANCH="refs/heads/mdg"        # Branch to publish
 PUBLIC_REPO_DIR="/home/julian/Code/scratch4school"  # Public repo directory
 WORKING_REPO_DIR="/home/julian/Code/scratch-editor"  # Working repo directory
-PUBLIC_REMOTE="git@github.com:juliankiedaisch/Scratch4School. git"  # GitHub remote
+PUBLIC_REMOTE="git@github.com:juliankiedaisch/Scratch4School"  # GitHub remote
 PUBLIC_BRANCH="main"                  # Branch to push to GitHub
-LAST_SYNC_FILE="$PUBLIC_REPO_DIR/. last_sync_commit"  # File to track last sync point
+LAST_SYNC_FILE="$PUBLIC_REPO_DIR/.last_sync_commit"  # File to track last sync point
 
 # Process arguments
 TAG_NAME=""
