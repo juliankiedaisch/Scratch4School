@@ -20,6 +20,7 @@ RUN pip install psycopg2-binary
 
 COPY app ./app
 COPY assets ./assets
+COPY migrations ./migrations
 COPY scripts ./scripts
 COPY run.py .
 COPY scripts/entrypoint.sh .
