@@ -14,6 +14,7 @@ import PlayerModal from '../player-modal/player-modal.jsx';
 import MyProjectsTab from './my-projects-tab.jsx';
 import CollaborationProjectsTab from './collaboration-projects-tab.jsx';
 import SharedProjectsTab from './shared-projects-tab.jsx';
+import { AddUserModal, AddGroupModal } from '../shared-modals';
 
 const messages = defineMessages({
     title: {
@@ -385,6 +386,71 @@ const messages = defineMessages({
         id: 'gui.collaborationModal.permissionLevel',
         defaultMessage: 'Permission Level',
         description: 'Permission level label'
+    },
+    projectSingular: {
+        id: 'gui.collaborationModal.projectSingular',
+        defaultMessage: 'Project',
+        description: 'Singular form of project'
+    },
+    projectPlural: {
+        id: 'gui.collaborationModal.projectPlural',
+        defaultMessage: 'Projects',
+        description: 'Plural form of projects'
+    },
+    selectOwnerPrompt: {
+        id: 'gui.collaborationModal.selectOwnerPrompt',
+        defaultMessage: 'Select an owner to view their shared projects',
+        description: 'Prompt to select an owner in shared projects tab'
+    },
+    selectProjectPrompt: {
+        id: 'gui.collaborationModal.selectProjectPrompt',
+        defaultMessage: 'Click on a project to see more information.',
+        description: 'Prompt to select a project'
+    },
+    editTitle: {
+        id: 'gui.collaborationModal.editTitle',
+        defaultMessage: 'Edit title',
+        description: 'Tooltip for edit title button'
+    },
+    confirmWithdrawSubmission: {
+        id: 'gui.collaborationModal.confirmWithdrawSubmission',
+        defaultMessage: 'Are you sure you want to withdraw this submission?',
+        description: 'Confirmation message for withdrawing assignment submission'
+    },
+    withdrawSubmissionError: {
+        id: 'gui.collaborationModal.withdrawSubmissionError',
+        defaultMessage: 'Failed to withdraw submission',
+        description: 'Error message when withdrawal fails'
+    },
+    submitToAssignment: {
+        id: 'gui.collaborationModal.submitToAssignment',
+        defaultMessage: 'Submit to Assignment',
+        description: 'Button to submit project to an assignment'
+    },
+    withdrawFromAssignment: {
+        id: 'gui.collaborationModal.withdrawFromAssignment',
+        defaultMessage: 'Withdraw from Assignment',
+        description: 'Button to withdraw project from an assignment'
+    },
+    submittedToLabel: {
+        id: 'gui.collaborationModal.submittedToLabel',
+        defaultMessage: 'Submitted to:',
+        description: 'Label for submitted assignment name'
+    },
+    organizerLabel: {
+        id: 'gui.collaborationModal.organizerLabel',
+        defaultMessage: 'Organizer:',
+        description: 'Label for assignment organizer'
+    },
+    statusLabel: {
+        id: 'gui.collaborationModal.statusLabel',
+        defaultMessage: 'Status:',
+        description: 'Label for project status'
+    },
+    frozenStatus: {
+        id: 'gui.collaborationModal.frozenStatus',
+        defaultMessage: 'Frozen - Cannot be edited',
+        description: 'Status message for frozen project'
     }
 });
 
@@ -1109,6 +1175,26 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
             />
             <FormattedMessage {...messages.title} />
         </div>
+        <div className={styles.mainTabs}>
+            <button 
+                className={`${styles.mainTabButton} ${activeTab === 'my-projects' ? styles.activeMainTab : ''}`}
+                onClick={() => handleTabChange('my-projects')}
+            >
+                <FormattedMessage {...messages.myProjects} />
+            </button>
+            <button 
+                className={`${styles.mainTabButton} ${activeTab === 'collaboration-projects' ? styles.activeMainTab : ''}`}
+                onClick={() => handleTabChange('collaboration-projects')}
+            >
+                <FormattedMessage {...messages.collaborationProjects} />
+            </button>
+            <button 
+                className={`${styles.mainTabButton} ${activeTab === 'shared-with-me' ? styles.activeMainTab : ''}`}
+                onClick={() => handleTabChange('shared-with-me')}
+            >
+                <FormattedMessage {...messages.sharedWithMe} />
+            </button>
+        </div>
         <button
             className={styles.closeButton}
             onClick={onClose}
@@ -1120,28 +1206,6 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
                 alt="Close"
             />
         </button>
-    </div>
-
-    {/* Tab Navigation */}
-    <div className={styles.tabsContainer}>
-        <div 
-            className={`${styles.tab} ${activeTab === 'my-projects' ? styles.activeTab : ''}`}
-            onClick={() => handleTabChange('my-projects')}
-        >
-            <FormattedMessage {...messages.myProjects} />
-        </div>
-        <div 
-            className={`${styles.tab} ${activeTab === 'collaboration-projects' ? styles.activeTab : ''}`}
-            onClick={() => handleTabChange('collaboration-projects')}
-        >
-            <FormattedMessage {...messages.collaborationProjects} />
-        </div>
-        <div 
-            className={`${styles.tab} ${activeTab === 'shared-with-me' ? styles.activeTab : ''}`}
-            onClick={() => handleTabChange('shared-with-me')}
-        >
-            <FormattedMessage {...messages.sharedWithMe} />
-        </div>
     </div>
 
 
@@ -1174,6 +1238,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
             handleShowAddGroup={setShowAddGroup}
             fetchAvailableUsers={fetchAvailableUsers}
             fetchAvailableGroups={fetchAvailableGroups}
+            onRefreshProjects={fetchOwnProjects}
             intl={intl}
             messages={messages}
         />
@@ -1207,6 +1272,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
             handleShowAddGroup={setShowAddGroup}
             fetchAvailableUsers={fetchAvailableUsers}
             fetchAvailableGroups={fetchAvailableGroups}
+            onRefreshProjects={fetchCollaborationProjectsList}
             intl={intl}
             messages={messages}
         />
@@ -1234,7 +1300,7 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
 
 
     {showAddMember && (
-        <AddMemberDialog
+        <AddUserModal
             users={availableUsers}
             searchQuery={userSearch}
             onSearchChange={setUserSearch}
@@ -1244,18 +1310,18 @@ const CollaborationManagerModal = ({ isOpen, onClose, vm, onUpdateProjectTitle, 
                 setUserSearch('');
             }}
             intl={intl}
+            messages={messages}
         />
     )}
 
     {/* Add Group Dialog */}
     {showAddGroup && (
-        <AddGroupDialog
+        <AddGroupModal
             groups={availableGroups}
             onAdd={(groupId, permission) => handleGrantGroupPermission(groupId, permission)}
             onClose={() => setShowAddGroup(false)}
             intl={intl}
             messages={messages}
-            styles={styles}
         />
     )}
 
@@ -1380,147 +1446,6 @@ const MakeCollaborativeDialog = ({
         </div>
     );
 };
-
-const AddMemberDialog = ({ users, searchQuery, onSearchChange, onAdd, onClose, intl }) => {
-    const [selectedUser, setSelectedUser] = useState(null);
-    
-    // Filter users based on search query
-    const filteredUsers = users.filter(user => 
-        user.username?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    return (
-        <div className={styles.dialogOverlay}>
-            <div className={styles.dialog}>
-                <div className={styles.dialogHeader}>
-                    <h3><FormattedMessage {...messages.addMember} /></h3>
-                    <button className={styles.dialogClose} onClick={onClose}>×</button>
-                </div>
-                <div className={styles.dialogBody}>
-                    <input
-                        type="text"
-                        className={styles.searchInput}
-                        placeholder={intl.formatMessage(messages.searchUsers)}
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                    />
-                    <div className={styles.userList}>
-                        {filteredUsers.length === 0 && (
-                            <div className={styles.noUsers}>
-                                <FormattedMessage {...messages.noUsersFound} />
-                            </div>
-                        )}
-                        {filteredUsers.map(user => (
-                            <div
-                                key={user.id}
-                                className={`${styles.userItem} ${selectedUser?.id === user.id ? styles.userItemSelected : ''}`}
-                                onClick={() => setSelectedUser(user)}
-                            >
-                                <div className={styles.userAvatar}>
-                                    {user.username[0].toUpperCase()}
-                                </div>
-                                <div className={styles.userName}>{user.username}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className={styles.dialogFooter}>
-                    <button className={styles.cancelButton} onClick={onClose}>
-                        <FormattedMessage {...messages.cancel} />
-                    </button>
-                    <button
-                        className={styles.confirmButton}
-                        disabled={!selectedUser}
-                        onClick={() => {
-                            if (selectedUser) {
-                                onAdd(selectedUser.id);
-                            }
-                        }}
-                    >
-                        <FormattedMessage {...messages.save} />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const AddGroupDialog = ({ groups, onAdd, onClose, intl, messages, styles }) => {
-    const [selectedGroup, setSelectedGroup] = useState(null);
-    const [selectedPermission, setSelectedPermission] = useState('READ');
-
-    return (
-        <div className={styles.dialogOverlay}>
-            <div className={styles.dialog}>
-                <div className={styles.dialogHeader}>
-                    <h3><FormattedMessage {...messages.addGroup} /></h3>
-                    <button className={styles.dialogClose} onClick={onClose}>×</button>
-                </div>
-                <div className={styles.dialogBody}>
-                    <div className={styles.groupList}>
-                        {groups.length === 0 && (
-                            <div className={styles.noGroups}>
-                                Keine Gruppen verfügbar
-                            </div>
-                        )}
-                        {groups.map(group => (
-                            <div
-                                key={group.id}
-                                className={`${styles.groupItem} ${selectedGroup?.id === group.id ? styles.groupItemSelected : ''}`}
-                                onClick={() => setSelectedGroup(group)}
-                            >
-                                <div className={styles.groupAvatar}>
-                                    👥
-                                </div>
-                                <div className={styles.groupName}>
-                                    {group.name}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {selectedGroup && (
-                        <div className={styles.permissionSelection}>
-                            <label><FormattedMessage {...messages.permissionLevel} />:</label>
-                            <select
-                                className={styles.permissionSelect}
-                                value={selectedPermission}
-                                onChange={(e) => setSelectedPermission(e.target.value)}
-                            >
-                                <option value="READ">
-                                    👁️ {intl.formatMessage(messages.permissionRead)}
-                                </option>
-                                <option value="WRITE">
-                                    ✏️ {intl.formatMessage(messages.permissionWrite)}
-                                </option>
-                                <option value="ADMIN">
-                                    👑 {intl.formatMessage(messages.permissionAdmin)}
-                                </option>
-                            </select>
-                        </div>
-                    )}
-                </div>
-                <div className={styles.dialogFooter}>
-                    <button className={styles.cancelButton} onClick={onClose}>
-                        <FormattedMessage {...messages.cancel} />
-                    </button>
-                    <button
-                        className={styles.confirmButton}
-                        disabled={!selectedGroup}
-                        onClick={() => {
-                            if (selectedGroup) {
-                                onAdd(selectedGroup.id, selectedPermission);
-                            }
-                        }}
-                    >
-                        <FormattedMessage {...messages.save} />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 const CommitDialog = ({ commitMessage, onCommitMessageChange, onCommit, onClose, intl }) => {
     return (
@@ -1738,15 +1663,6 @@ MakeCollaborativeDialog.propTypes = {
     initialMessage: PropTypes.string,
     onMessageChange: PropTypes.func,
     onConfirm: PropTypes.func,
-    onClose: PropTypes.func,
-    intl: PropTypes.object
-};
-
-AddMemberDialog.propTypes = {
-    users: PropTypes.array,
-    searchQuery: PropTypes.string,
-    onSearchChange: PropTypes.func,
-    onAdd: PropTypes.func,
     onClose: PropTypes.func,
     intl: PropTypes.object
 };

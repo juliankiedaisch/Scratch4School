@@ -30,6 +30,12 @@ class CollaborativeProjectPermission(db.Model):
     # Permission level
     permission = db.Column(db.Enum(PermissionLevel), nullable=False, default=PermissionLevel.READ)
     
+    # Frozen state (for assignment submissions)
+    is_frozen = db.Column(db.Boolean, default=False, nullable=False)
+    frozen_at = db.Column(db.DateTime, nullable=True)
+    frozen_by = db.Column(db.String(128), db.ForeignKey('users.id'), nullable=True)
+    frozen_reason = db.Column(db.Text, nullable=True)  # e.g., "Assignment submission"
+    
     # Metadata
     granted_by = db.Column(db.String(128), db.ForeignKey('users.id'), nullable=True)
     granted_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -39,6 +45,7 @@ class CollaborativeProjectPermission(db.Model):
     user = db.relationship('User', foreign_keys=[user_id], backref='project_permissions')
     group = db.relationship('Group', backref='project_permissions')
     granter = db.relationship('User', foreign_keys=[granted_by])
+    freezer = db.relationship('User', foreign_keys=[frozen_by])
     
     # Constraints
     __table_args__ = (
@@ -49,6 +56,20 @@ class CollaborativeProjectPermission(db.Model):
         db.UniqueConstraint('collaborative_project_id', 'user_id', name='unique_user_permission'),
         db.UniqueConstraint('collaborative_project_id', 'group_id', name='unique_group_permission'),
     )
+    
+    def freeze(self, user_id, reason=None):
+        """Freeze this permission (typically for assignment submissions)"""
+        self.is_frozen = True
+        self.frozen_at = datetime.now(timezone.utc)
+        self.frozen_by = user_id
+        self.frozen_reason = reason
+    
+    def unfreeze(self):
+        """Unfreeze this permission"""
+        self.is_frozen = False
+        self.frozen_at = None
+        self.frozen_by = None
+        self.frozen_reason = None
     
     def to_dict(self):
         return {
@@ -65,7 +86,11 @@ class CollaborativeProjectPermission(db.Model):
                 'external_id': self.group.external_id
             } if self.group else None,
             'granted_by': self.granter.username if self.granter else None,
-            'granted_at': self.granted_at.isoformat()
+            'granted_at': self.granted_at.isoformat(),
+            'is_frozen': self.is_frozen,
+            'frozen_at': self.frozen_at.isoformat() if self.frozen_at else None,
+            'frozen_by': self.freezer.username if self.freezer else None,
+            'frozen_reason': self.frozen_reason
         }
 
 
@@ -255,6 +280,57 @@ class CollaborativeProject(db.Model):
     def restore(self):
         self.deleted_at = None
         self.deleted_by = None
+    
+    def freeze_for_assignment(self, user_id, assignment_id):
+        """
+        Freeze all permissions for this project (for assignment submission)
+        This prevents further edits to the project
+        """
+        reason = f"Assignment submission: Assignment #{assignment_id}"
+        
+        # Ensure owner has a permission entry (for single-owner projects)
+        owner_perm = CollaborativeProjectPermission.query.filter_by(
+            collaborative_project_id=self.id,
+            user_id=self.created_by
+        ).first()
+        
+        if not owner_perm:
+            # Create owner permission entry
+            owner_perm = CollaborativeProjectPermission(
+                collaborative_project_id=self.id,
+                user_id=self.created_by,
+                permission=PermissionLevel.ADMIN,
+                granted_by=self.created_by,
+                granted_at=datetime.now(timezone.utc)
+            )
+            db.session.add(owner_perm)
+            db.session.flush()
+        
+        # Freeze all permissions including the owner's
+        for permission in self.permissions:
+            if not permission.is_frozen:
+                permission.freeze(user_id, reason)
+    
+    def is_frozen(self):
+        """Check if project is frozen (any permission is frozen)"""
+        return any(perm.is_frozen for perm in self.permissions)
+    
+    def can_edit(self, user):
+        """
+        Check if user can edit this project
+        Returns False if project is frozen or user doesn't have WRITE/ADMIN permission
+        """
+        # Check if project is frozen
+        if self.is_frozen():
+            return False
+        
+        # Check user permission level
+        permission = self.get_user_permission(user)
+        
+        if not permission:
+            return False
+        
+        return permission in [PermissionLevel.WRITE, PermissionLevel.ADMIN]
 
     def __repr__(self):
         return f'<CollaborativeProject {self.name} (ID: {self.id})>'
@@ -304,6 +380,45 @@ class CollaborativeProject(db.Model):
         
         highest_perm = max(group_perms, key=lambda p: perm_hierarchy[p.permission])
         return highest_perm.permission
+    
+    def get_user_permission_object(self, user):
+        """
+        Get the permission object for a user (needed to check is_frozen)
+        Priority: direct user permission > group permissions
+        Returns the permission object or None
+        """
+        # Check direct user permission
+        user_perm = CollaborativeProjectPermission.query.filter_by(
+            collaborative_project_id=self.id,
+            user_id=user.id
+        ).first()
+        
+        if user_perm:
+            return user_perm
+        
+        # Check group permissions (take highest)
+        user_group_ids = [g.id for g in user.groups]
+        
+        if not user_group_ids:
+            return None
+        
+        group_perms = CollaborativeProjectPermission.query.filter(
+            CollaborativeProjectPermission.collaborative_project_id == self.id,
+            CollaborativeProjectPermission.group_id.in_(user_group_ids)
+        ).all()
+        
+        if not group_perms:
+            return None
+        
+        # Return highest permission object
+        perm_hierarchy = {
+            PermissionLevel.ADMIN: 3,
+            PermissionLevel.WRITE: 2,
+            PermissionLevel.READ: 1
+        }
+        
+        highest_perm = max(group_perms, key=lambda p: perm_hierarchy[p.permission])
+        return highest_perm
 
     def has_permission(self, user, required_permission):
         """Check if user has at least the required permission level"""

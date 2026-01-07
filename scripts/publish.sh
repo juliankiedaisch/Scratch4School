@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Configuration
-SOURCE_BRANCH="refs/heads/mdg"        # Branch to publish
+SOURCE_BRANCH="mdg"                   # Branch to publish (without refs/heads/)
 PUBLIC_REPO_DIR="/home/julian/Code/Scratch4School"  # Public repo directory
 WORKING_REPO_DIR="/home/julian/Code/scratch-editor"  # Working repo directory
-PUBLIC_REMOTE="git@github. com:juliankiedaisch/Scratch4School"  # GitHub remote
+PUBLIC_REMOTE="git@github.com:juliankiedaisch/Scratch4School.git"  # GitHub remote
 PUBLIC_BRANCH="main"                  # Branch to push to GitHub
 LAST_SYNC_FILE="$PUBLIC_REPO_DIR/.last_sync_commit"  # File to track last sync point
 
@@ -63,21 +63,32 @@ else
   echo "Found last sync commit: $LAST_SYNC_COMMIT"
 fi
 
-# Save the current branch in working repo to restore it later
+# Save the current branch/commit in working repo to restore it later
 cd "$WORKING_REPO_DIR"
-ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-ORIGINAL_COMMIT=$(git rev-parse HEAD)
-echo "Working repo currently on: $ORIGINAL_BRANCH ($ORIGINAL_COMMIT)"
+if git symbolic-ref -q HEAD > /dev/null; then
+  # We're on a branch
+  ORIGINAL_REF=$(git symbolic-ref --short HEAD)
+  RESTORE_TYPE="branch"
+else
+  # We're in detached HEAD state
+  ORIGINAL_REF=$(git rev-parse HEAD)
+  RESTORE_TYPE="commit"
+fi
+echo "Working repo currently on: $ORIGINAL_REF ($RESTORE_TYPE)"
 
 # Cleanup function - restore working repo state
 cleanup() {
   echo "Cleaning up..."
   
-  # Restore original branch in working repo
-  if [ -n "${ORIGINAL_BRANCH:-}" ]; then
-    cd "$WORKING_REPO_DIR"
-    echo "Restoring working repository to original state:  $ORIGINAL_BRANCH"
-    git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout "$ORIGINAL_COMMIT" 2>/dev/null || true
+  # Restore original branch/commit in working repo
+  if [ -n "${ORIGINAL_REF:-}" ]; then
+    cd "$WORKING_REPO_DIR" 2>/dev/null || true
+    echo "Restoring working repository to original state: $ORIGINAL_REF"
+    if [ "$RESTORE_TYPE" = "branch" ]; then
+      git checkout "$ORIGINAL_REF" 2>/dev/null || true
+    else
+      git checkout --detach "$ORIGINAL_REF" 2>/dev/null || true
+    fi
   fi
   
   # Remove temporary directory
@@ -88,31 +99,35 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Get the latest commit from the source branch
+# Update and checkout the source branch
 cd "$WORKING_REPO_DIR"
-echo "Fetching latest changes for $SOURCE_BRANCH..."
-git fetch origin mdg: mdg 2>/dev/null || git fetch mdg mdg: mdg 2>/dev/null || true
-git checkout mdg
-echo "Checkout done"
-git pull origin mdg 2>/dev/null || git pull mdg mdg 2>/dev/null || true
+echo "Updating $SOURCE_BRANCH branch..."
 
-LATEST_COMMIT=$(git rev-parse "$SOURCE_BRANCH")
+# Stash any local changes
+STASHED=false
+if !  git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing local changes..."
+  git stash push -m "Auto-stash by publish script"
+  STASHED=true
+fi
+
+# Make sure we have the latest
+git fetch origin "$SOURCE_BRANCH" || git fetch "$SOURCE_BRANCH" || true
+git checkout "$SOURCE_BRANCH"
+git pull origin "$SOURCE_BRANCH" 2>/dev/null || git pull "$SOURCE_BRANCH" 2>/dev/null || true
+
+LATEST_COMMIT=$(git rev-parse HEAD)
 echo "Latest commit in $SOURCE_BRANCH: $LATEST_COMMIT"
 
 # Create temporary directory
 TMP_DIR=$(mktemp -d)
-echo "Created temporary directory:  $TMP_DIR"
+echo "Created temporary directory: $TMP_DIR"
 
 # Check if this is the first run (no history to preserve)
 if [ "$FIRST_RUN" = true ]; then
   echo "FIRST RUN:  Creating clean snapshot without history..."
   
-  # Create a fresh clone for the export instead of using git archive
-  echo "Cloning the repository to ensure all files are included..."
-  cd "$WORKING_REPO_DIR"
-  git checkout "$SOURCE_BRANCH"
-  
-  # Copy all files directly (not using git archive which may filter files)
+  # Copy all files directly
   echo "Copying all files to temporary directory..."
   rsync -av --exclude=".git/" .  "$TMP_DIR/"
   
@@ -123,7 +138,7 @@ if [ "$FIRST_RUN" = true ]; then
   
   # Now setup the public repository
   echo "Setting up public repository at $PUBLIC_REPO_DIR..."
-  if [ ! -d "$PUBLIC_REPO_DIR" ]; then
+  if [ !  -d "$PUBLIC_REPO_DIR" ]; then
     echo "Creating directory $PUBLIC_REPO_DIR..."
     mkdir -p "$PUBLIC_REPO_DIR"
   fi
@@ -138,7 +153,7 @@ if [ "$FIRST_RUN" = true ]; then
   else
     echo "Using existing Git repository."
     # If repo exists, clean it for the initial snapshot
-    git rm -rf . 2>/dev/null || true
+    git rm -rf .  2>/dev/null || true
     git clean -fdx 2>/dev/null || true
   fi
 
@@ -151,16 +166,16 @@ if [ "$FIRST_RUN" = true ]; then
     git remote set-url origin "$PUBLIC_REMOTE"
   fi
 
-  # Copy files from temp to public repo with explicit binary handling
+  # Copy files from temp to public repo
   echo "Copying files to public repository..."
   rsync -av --delete --exclude=".git/" \
-        --include="*.svg" --include="*.png" --include="*.jpg" --include="*. jpeg" \
-        --include="*. gif" --include="*.webp" --include="*.ico" \
+        --include="*.svg" --include="*. png" --include="*.jpg" --include="*.jpeg" \
+        --include="*.gif" --include="*.webp" --include="*.ico" \
         "$TMP_DIR/" "$PUBLIC_REPO_DIR/"
   
   # Verify files were copied correctly
   echo "Verifying files were copied correctly..."
-  SVG_COUNT_DEST=$(find "$PUBLIC_REPO_DIR" -name "*.svg" | wc -l)
+  SVG_COUNT_DEST=$(find "$PUBLIC_REPO_DIR" -name "*. svg" | wc -l)
   echo "Found $SVG_COUNT_DEST SVG files in public repository"
   
   # Add all files and make a single initial commit
@@ -173,13 +188,13 @@ else
   echo "Syncing changes since last sync..."
   
   # Check if the last sync commit exists in the working repository
-  if ! git rev-parse --quiet --verify "$LAST_SYNC_COMMIT^{commit}" >/dev/null; then
+  if !  git rev-parse --quiet --verify "$LAST_SYNC_COMMIT^{commit}" >/dev/null; then
     echo "Error:  Last sync commit not found in repository."
     echo "Please delete $LAST_SYNC_FILE and run again for a clean snapshot."
     exit 1
   fi
 
-  NEW_COMMITS=$(git rev-list --count "$LAST_SYNC_COMMIT. .$LATEST_COMMIT")
+  NEW_COMMITS=$(git rev-list --count "${LAST_SYNC_COMMIT}..${LATEST_COMMIT}")
   echo "Found $NEW_COMMITS new commits since last sync"
 
   if [ "$NEW_COMMITS" -eq 0 ]; then
@@ -203,7 +218,7 @@ else
 
   # Get commit messages for the summary commit
   echo "Collecting commit messages..."
-  COMMIT_MESSAGES=$(git log --format="- %s" "$LAST_SYNC_COMMIT..$LATEST_COMMIT")
+  COMMIT_MESSAGES=$(git log --format="- %s" "${LAST_SYNC_COMMIT}..${LATEST_COMMIT}")
   
   # Now setup the public repository
   cd "$PUBLIC_REPO_DIR"
@@ -228,18 +243,25 @@ else
     echo "Changes detected, creating commit..."
     
     # Stage all changes
-    git add -A .
+    git add -A . 
     
     # Create a single commit with summary of all source commits
     SUMMARY_MESSAGE="Sync $NEW_COMMITS commits from $SOURCE_BRANCH
 
 $COMMIT_MESSAGES
 
-Source commit range: $LAST_SYNC_COMMIT..$LATEST_COMMIT"
+Source commit range: ${LAST_SYNC_COMMIT}..${LATEST_COMMIT}"
     
     git commit -m "$SUMMARY_MESSAGE"
     echo "Created sync commit summarizing $NEW_COMMITS source commits"
   fi
+fi
+
+# Restore stashed changes if any
+if [ "$STASHED" = true ]; then
+  cd "$WORKING_REPO_DIR"
+  echo "Restoring stashed changes..."
+  git stash pop || echo "Warning: Could not restore stashed changes"
 fi
 
 # Save the latest commit for next sync
@@ -248,6 +270,7 @@ echo "Saved latest commit hash for next sync"
 
 # Create tag if requested
 if [ -n "$TAG_NAME" ]; then
+  cd "$PUBLIC_REPO_DIR"
   # Check if tag already exists
   if git rev-parse "$TAG_NAME" &>/dev/null; then
     echo "Warning: Tag '$TAG_NAME' already exists. Skipping tag creation."
@@ -259,6 +282,7 @@ if [ -n "$TAG_NAME" ]; then
 fi
 
 # Push to GitHub
+cd "$PUBLIC_REPO_DIR"
 echo "Pushing to GitHub..."
 if [ -n "$TAG_NAME" ]; then
   git push -u origin "$PUBLIC_BRANCH" --tags
@@ -275,6 +299,6 @@ else
   echo "Published $NEW_COMMITS new commits from $SOURCE_BRANCH to GitHub"
 fi
 if [ -n "$TAG_NAME" ]; then
-  echo "Created and pushed tag:  $TAG_NAME"
+  echo "Created and pushed tag: $TAG_NAME"
 fi
-echo "Working repository restored to:  $ORIGINAL_BRANCH"
+echo "Working repository restored to:  $ORIGINAL_REF"

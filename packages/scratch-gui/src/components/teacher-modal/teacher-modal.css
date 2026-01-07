@@ -53,6 +53,36 @@
     filter: brightness(0) invert(1);
 }
 
+.main-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.main-tab-button {
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.main-tab-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.active-main-tab {
+    background: white;
+    color: $ui-blue;
+}
+
+.active-main-tab:hover {
+    background: white;
+}
+
 .close-button {
     display: flex;
     background: none;
@@ -448,43 +478,73 @@
 .confirm-dialog {
     background: white;
     border-radius: 8px;
-    padding: 24px;
-    max-width: 500px;
+    padding: 28px;
+    max-width: 550px;
+    width: 90%;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .confirm-dialog h3 {
     margin: 0 0 16px 0;
     color: #dc3545;
+    font-size: 1.25rem;
 }
 
 .confirm-dialog p {
     margin: 0 0 24px 0;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 1rem;
 }
 
 .confirm-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .cancel-button {
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 12px 24px;
+    border-radius: 6px;
     border: 1px solid $ui-tertiary;
     background: white;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+    background-color: #f5f5f5;
+    border-color: #999;
 }
 
 .confirm-delete-button {
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 12px 24px;
+    border-radius: 6px;
     border: none;
     background-color: #dc3545;
     color: white;
     cursor: pointer;
     font-weight: 600;
+    font-size: 1rem;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.confirm-delete-button:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.confirm-delete-button:active {
+    transform: translateY(0);
 }
 
 /* Collaborative Project Badge */
@@ -950,3 +1010,1314 @@
     background-color: #ccc;
     cursor: not-allowed;
 }
+
+/* Assignments Tab Placeholder */
+.assignments-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px;
+}
+
+.placeholder-content {
+    text-align: center;
+    max-width: 500px;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.placeholder-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 12px;
+}
+
+.placeholder-description {
+    font-size: 1rem;
+    color: $text-primary-transparent;
+    line-height: 1.5;
+}
+
+/* ============================================
+   ASSIGNMENTS TAB - Modern Design
+   ============================================ */
+
+/* Assignment Item in Sidebar */
+.assignment-item {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border-bottom: 1px solid $ui-tertiary;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: white;
+    position: relative;
+    /* Touch-friendly minimum height */
+    min-height: 72px;
+}
+
+.assignment-item:hover {
+    background-color: rgba(76, 151, 255, 0.08);
+    transform: translateX(2px);
+}
+
+.assignment-item:active {
+    background-color: rgba(76, 151, 255, 0.15);
+    transform: scale(0.99);
+}
+
+.selected-assignment {
+    background-color: rgba(76, 151, 255, 0.12) !important;
+    border-left: 4px solid $motion-primary;
+    padding-left: 12px;
+}
+
+.selected-assignment:hover {
+    background-color: rgba(76, 151, 255, 0.18) !important;
+}
+
+.assignment-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.assignment-item-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: $text-primary;
+    line-height: 1.3;
+    word-break: break-word;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.assignment-due-indicator {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background-color: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.assignment-due-indicator.overdue {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+.assignment-item-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: $text-primary-transparent;
+}
+
+.assignment-due-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.assignment-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Create Assignment Button */
+.create-assignment-button {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px dashed $motion-primary;
+    background: linear-gradient(135deg, rgba(76, 151, 255, 0.05) 0%, rgba(76, 151, 255, 0.1) 100%);
+    color: $motion-primary;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* Touch-friendly height */
+    min-height: 56px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.create-assignment-button:hover {
+    background: linear-gradient(135deg, rgba(76, 151, 255, 0.1) 0%, rgba(76, 151, 255, 0.18) 100%);
+    border-color: #4a90d9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 151, 255, 0.25);
+}
+
+.create-assignment-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(76, 151, 255, 0.3);
+}
+
+.create-assignment-button:disabled {
+    background: #f0f0f0;
+    border-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Action Buttons */
+.primary-action-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background-color: $motion-primary;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    /* Touch-friendly minimum size */
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+}
+
+.primary-action-button:hover {
+    background-color: #4a90d9;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(76, 151, 255, 0.3);
+}
+
+.primary-action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(76, 151, 255, 0.4);
+}
+
+.primary-action-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.secondary-action-button {
+    padding: 10px 20px;
+    border: 2px solid $motion-primary;
+    border-radius: 6px;
+    background-color: white;
+    color: $motion-primary;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    /* Touch-friendly minimum size */
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+}
+
+.secondary-action-button:hover {
+    background-color: rgba(76, 151, 255, 0.08);
+    border-color: #4a90d9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(76, 151, 255, 0.2);
+}
+
+.secondary-action-button:active {
+    transform: translateY(0);
+    background-color: rgba(76, 151, 255, 0.15);
+}
+
+.secondary-action-button:disabled {
+    border-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.danger-action-button {
+    padding: 10px 20px;
+    border: 2px solid #dc3545;
+    border-radius: 6px;
+    background-color: white;
+    color: #dc3545;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+}
+
+.danger-action-button:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.danger-action-button:active {
+    transform: translateY(0);
+}
+
+/* Assignment Detail View */
+.assignment-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid $ui-tertiary;
+}
+
+.assignment-detail-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $ui-blue;
+    margin: 0;
+    line-height: 1.3;
+    flex: 1;
+    margin-right: 20px;
+}
+
+.assignment-detail-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Info Sections */
+.assignment-info-section {
+    margin-bottom: 28px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(76, 151, 255, 0.03) 0%, rgba(76, 151, 255, 0.06) 100%);
+    border-radius: 8px;
+    border-left: 4px solid $motion-primary;
+}
+
+.assignment-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.assignment-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.assignment-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.assignment-info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $text-primary-transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.assignment-info-value {
+    font-size: 1rem;
+    color: $text-primary;
+    font-weight: 500;
+}
+
+/* Statistics Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 2px solid $ui-tertiary;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: $motion-primary;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 151, 255, 0.15);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $motion-primary;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: $text-primary-transparent;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Submission Card */
+.submission-card {
+    background: white;
+    border: 2px solid $ui-tertiary;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.submission-card:hover {
+    border-color: rgba(76, 151, 255, 0.4);
+    box-shadow: 0 3px 10px rgba(76, 151, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.submission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.submission-student-info {
+    flex: 1;
+}
+
+.submission-student-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 4px;
+}
+
+.submission-project-name {
+    font-size: 0.9rem;
+    color: $text-primary-transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.submission-meta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: $text-primary-transparent;
+}
+
+.submission-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.submission-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.submission-status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.status-frozen {
+    background-color: rgba(76, 151, 255, 0.15);
+    color: $motion-primary;
+}
+
+.status-graded {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #4caf50;
+}
+
+/* Submission Details (Expanded) */
+.submission-details {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid $ui-tertiary;
+}
+
+.submission-section {
+    margin-bottom: 20px;
+}
+
+.submission-section:last-child {
+    margin-bottom: 0;
+}
+
+.submission-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.versions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.version-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: rgba(76, 151, 255, 0.04);
+    border: 1px solid rgba(76, 151, 255, 0.2);
+    border-radius: 8px;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.version-item:hover {
+    background: rgba(76, 151, 255, 0.08);
+    border-color: rgba(76, 151, 255, 0.4);
+}
+
+.version-info {
+    flex: 1;
+}
+
+.version-number {
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 4px;
+}
+
+.version-message {
+    font-size: 0.85rem;
+    color: $text-primary-transparent;
+    margin-bottom: 4px;
+}
+
+.version-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: $text-primary-transparent;
+}
+
+.version-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.changes-indicator {
+    color: #ff9800;
+    font-weight: 600;
+}
+
+.open-button {
+    padding: 8px 16px;
+    background: $motion-primary;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-height: 38px;
+}
+
+.open-button:hover {
+    background: darken($motion-primary, 8%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 151, 255, 0.3);
+}
+
+.open-button:active {
+    transform: translateY(0);
+}
+
+/* Grade Form */
+.grade-form {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(76, 151, 255, 0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(76, 151, 255, 0.2);
+}
+
+.grade-form-row {
+    margin-bottom: 12px;
+}
+
+.grade-form-row:last-of-type {
+    margin-bottom: 0;
+}
+
+.grade-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    /* Touch-friendly height */
+    min-height: 44px;
+}
+
+.grade-input:focus {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+.grade-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    resize: vertical;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.grade-textarea:focus {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+.grade-form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.feedback-display {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(255, 152, 0, 0.08);
+    border-left: 4px solid #ff9800;
+    border-radius: 4px;
+}
+
+.feedback-display strong {
+    color: #ff9800;
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+/* Form Styles for Assignment Create/Edit */
+.assignment-form {
+    max-width: 700px;
+}
+
+.assignment-form-group {
+    margin-bottom: 20px;
+}
+
+.assignment-form-label {
+    display: block;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.assignment-form-input,
+.assignment-form-textarea,
+.assignment-form-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    /* Touch-friendly height */
+    min-height: 44px;
+}
+
+.assignment-form-input:focus,
+.assignment-form-textarea:focus,
+.assignment-form-select:focus {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+.assignment-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.assignment-form-select {
+    min-height: 120px;
+}
+
+.assignment-form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 2px solid $ui-tertiary;
+}
+
+.assignment-form-hint {
+    font-size: 0.85rem;
+    color: $text-primary-transparent;
+    margin-top: 6px;
+    font-style: italic;
+}
+
+/* Date and Time Row Layout */
+.date-time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.date-time-row .assignment-form-group {
+    margin-bottom: 0;
+}
+
+/* Checkbox styling */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    color: $text-primary;
+    font-size: 0.95rem;
+    user-select: none;
+}
+
+.checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: $motion-primary;
+}
+
+/* Time Select Dropdowns */
+.time-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-select {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+    padding-right: 36px;
+}
+
+.time-select:focus {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+.time-select:hover {
+    border-color: $motion-primary;
+}
+
+.time-separator {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: $text-primary;
+    padding: 0 4px;
+}
+
+/* TimePicker Component Styling - Keep for backward compatibility */
+.time-picker-wrapper {
+    width: 100%;
+    position: relative;
+}
+
+.time-picker-wrapper :global(.react-time-picker__wrapper) {
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.time-picker-wrapper :global(.react-time-picker__wrapper):focus-within {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+.time-picker-wrapper :global(.react-time-picker__inputGroup) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-grow: 1;
+}
+
+.time-picker-wrapper :global(.react-time-picker__inputGroup__input) {
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    font-family: inherit;
+    padding: 4px;
+    text-align: center;
+    /* Make inputs larger for touch */
+    min-width: 2.5em;
+    min-height: 32px;
+}
+
+.time-picker-wrapper :global(.react-time-picker__inputGroup__input:invalid) {
+    background: transparent;
+}
+
+.time-picker-wrapper :global(.react-time-picker__inputGroup__divider) {
+    padding: 0 4px;
+    font-size: 1rem;
+}
+
+/* Clock button styling */
+.time-picker-wrapper :global(.react-time-picker__clock-button) {
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-picker-wrapper :global(.react-time-picker__clock-button):hover {
+    background: rgba(76, 151, 255, 0.1);
+    border-radius: 4px;
+}
+
+.time-picker-wrapper :global(.react-time-picker__clock-button svg) {
+    width: 20px;
+    height: 20px;
+}
+
+.time-picker-wrapper :global(.react-time-picker__clock) {
+    z-index: 10000 !important;
+    position: fixed !important;
+    top: auto !important;
+    left: auto !important;
+}
+
+.time-picker-wrapper :global(.react-time-picker__clock--open) {
+    display: block !important;
+}
+
+/* Clock styling for tablet use */
+.time-picker-clock :global(.react-clock) {
+    border: 2px solid $ui-tertiary;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.time-picker-clock :global(.react-clock__hand) {
+    stroke: $motion-primary;
+    stroke-width: 3;
+}
+
+.time-picker-clock :global(.react-clock__mark__body) {
+    background-color: $text-primary;
+}
+
+.time-picker-clock :global(.react-clock__hand__body) {
+    background-color: $motion-primary;
+}
+
+/* Make time input more tablet-friendly */
+input[type="time"] {
+    /* Increase touch target size */
+    padding: 14px 12px;
+    font-size: 1rem;
+    /* Better visibility on tablets */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input[type="date"] {
+    padding: 12px;
+    font-size: 1rem;
+    border: 2px solid $ui-tertiary;
+    border-radius: 6px;
+    font-family: inherit;
+    background: white;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: $motion-primary;
+    box-shadow: 0 0 0 3px rgba(76, 151, 255, 0.1);
+}
+
+input[type="date"]:hover {
+    border-color: $motion-primary;
+}
+
+/* Bulk Actions */
+.bulk-actions-bar {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(76, 151, 255, 0.04);
+    border-radius: 6px;
+}
+
+/* Responsive Design for Tablets */
+@media (max-width: 768px) {
+    .date-time-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .date-time-row .assignment-form-group {
+        margin-bottom: 12px;
+    }
+    
+    /* Larger touch targets on tablets */
+    input[type="date"] {
+        padding: 16px 14px;
+        font-size: 1.1rem;
+        min-height: 52px;
+    }
+    
+    /* Time select dropdowns larger on tablets */
+    .time-select {
+        padding: 16px 14px;
+        font-size: 1.1rem;
+        min-height: 52px;
+        padding-right: 40px;
+    }
+    
+    .time-separator {
+        font-size: 1.8rem;
+    }
+    
+    /* TimePicker larger on tablets */
+    .time-picker-wrapper :global(.react-time-picker__wrapper) {
+        padding: 12px 14px;
+        min-height: 52px;
+    }
+    
+    .time-picker-wrapper :global(.react-time-picker__inputGroup__input) {
+        font-size: 1.1rem;
+        min-width: 3em;
+        min-height: 40px;
+        padding: 6px;
+    }
+    
+    .time-picker-wrapper :global(.react-time-picker__inputGroup__divider) {
+        font-size: 1.1rem;
+    }
+    
+    /* Larger clock on tablets */
+    .time-picker-clock :global(.react-clock) {
+        width: 280px !important;
+        height: 280px !important;
+        padding: 20px;
+    }
+    
+    .time-picker-clock :global(.react-clock__hand) {
+        stroke-width: 4;
+    }
+    
+    .assignment-detail-header {
+        flex-direction: column;
+    }
+    
+    .assignment-detail-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .assignment-detail-actions button {
+        flex: 1;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+    
+    .assignment-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .submission-header {
+        flex-direction: column;
+    }
+    
+    .submission-actions {
+        width: 100%;
+    }
+    
+    .submission-actions button {
+        flex: 1;
+    }
+    
+    .grade-form-actions {
+        flex-direction: column;
+    }
+    
+    .grade-form-actions button {
+        width: 100%;
+    }
+}
+
+/* Member/Organizer Item Styles */
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid $ui-tertiary;
+    border-radius: 6px;
+    background-color: white;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.member-item:hover {
+    border-color: rgba(76, 151, 255, 0.4);
+    box-shadow: 0 2px 6px rgba(76, 151, 255, 0.1);
+}
+
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $motion-primary 0%, #4a90d9 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.group-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff9800 0%, #ff6f00 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.member-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name {
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 2px;
+}
+
+.member-role {
+    font-size: 0.85rem;
+    color: $text-primary-transparent;
+}
+
+.remove-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #dc3545;
+    background: white;
+    color: #dc3545;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.remove-button:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+}
+
+.add-button-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Dialog Styles */
+.dialog-content {
+    margin: 20px 0;
+}
+
+.dialog-content select {
+    width: 100%;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets on touch devices */
+    .assignment-item {
+        min-height: 80px;
+        padding: 16px;
+    }
+    
+    .primary-action-button,
+    .secondary-action-button,
+    .danger-action-button {
+        min-height: 48px;
+        min-width: 48px;
+        padding: 12px 24px;
+    }
+    
+    .create-assignment-button {
+        min-height: 64px;
+    }
+    
+    .remove-button {
+        width: 40px;
+        height: 40px;
+    }
+    
+    /* Remove hover effects on touch */
+    .assignment-item:hover,
+    .submission-card:hover,
+    .stat-card:hover,
+    .member-item:hover {
+        transform: none;
+    }
+    
+    /* Enhance active states for touch feedback */
+    .assignment-item:active {
+        transform: scale(0.98);
+        background-color: rgba(76, 151, 255, 0.2);
+    }
+}
+
+/* Removed: Assignment modals styles moved to shared-modals/shared-modals.css */
+
+/* Delete Confirmation Modal */
+.delete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.delete-modal {
+    background: white;
+    border-radius: 8px;
+    min-width: 400px;
+    max-width: 500px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.delete-modal-header {
+    padding: 16px 20px;
+    background-color: $ui-blue;
+    border-radius: 8px 8px 0 0;
+}
+
+.delete-modal-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.delete-modal-content {
+    padding: 24px 20px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.delete-modal-content p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.delete-modal-buttons {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    justify-content: flex-end;
+}
+
+.cancel-button,
+.delete-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-button {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.cancel-button:hover {
+    background-color: #d0d0d0;
+}
+
+.delete-button {
+    background-color: #ff4444;
+    color: white;
+}
+
+.delete-button:hover {
+    background-color: #ff2222;
+}
+
+/* Version Actions Modal - Touch-friendly */
+.version-actions-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.modal-action-button {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 6px;
+    background-color: $ui-blue;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.modal-action-button:hover:not(:disabled) {
+    background-color: #4280d7;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 151, 255, 0.3);
+}
+
+.modal-action-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(76, 151, 255, 0.3);
+}
+
+.modal-action-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.version-actions-modal .cancel-button {
+    padding: 14px 24px;
+    min-height: 48px;
+    font-size: 1rem;
+    margin-top: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+

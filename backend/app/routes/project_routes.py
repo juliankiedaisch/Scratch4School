@@ -6,6 +6,7 @@ from app.models.projects import (
     CollaborativeProjectPermission,
     PermissionLevel
 )
+from app.models.assignments import AssignmentSubmission
 from app.models.groups import Group
 from app.models.users import User
 from app.middlewares.auth import require_auth
@@ -470,6 +471,13 @@ def download_project(user_info, project_id):
         if not collaborative_project:
             return jsonify({'error': 'Project has no collaborative project'}), 404
         
+        # Check if project is frozen (unless user is admin/teacher)
+        if user.role not in ['admin', 'teacher'] and collaborative_project.is_frozen():
+            # Check if user's permission is frozen
+            user_permission = collaborative_project.get_user_permission_object(user)
+            if user_permission and user_permission.is_frozen:
+                return jsonify({'error': 'This project has been frozen and cannot be accessed'}), 403
+        
         # Check permission
         has_access = False
         
@@ -669,6 +677,25 @@ def get_owned_projects(user_info):
                 all_users_with_access = proj.get_all_users_with_access()
                 project_data['collaborator_count'] = len(all_users_with_access)
                 
+                # Check if project is frozen
+                project_data['is_frozen'] = proj.is_frozen()
+                
+                # Get assignment submissions for this project
+                submissions = AssignmentSubmission.query.filter_by(
+                    collaborative_project_id=proj.id,
+                    user_id=user.id
+                ).all()
+                project_data['assignment_submissions'] = [{
+                    'id': sub.id,
+                    'assignment_id': sub.assignment_id,
+                    'assignment_name': sub.assignment.name,
+                    'submitted_at': to_iso_string(sub.submitted_at),
+                    'organizers': [{
+                        'id': org.id,
+                        'username': org.username
+                    } for org in sub.assignment.organizers]
+                } for sub in submissions]
+                
                 owned_projects.append(project_data)
         
         # Sort by last_edited_at descending (most recent first)
@@ -749,11 +776,30 @@ def get_collaboration_projects(user_info):
                         project_data['working_copy_has_changes'] = wc.has_changes
                         last_edited_at = max(last_edited_at, wc.updated_at)
                     
+                    # Get assignment submissions for this project
+                    submissions = AssignmentSubmission.query.filter_by(
+                        collaborative_project_id=proj.id,
+                        user_id=user.id
+                    ).all()
+                    project_data['assignment_submissions'] = [{
+                        'id': sub.id,
+                        'assignment_id': sub.assignment_id,
+                        'assignment_name': sub.assignment.name,
+                        'submitted_at': to_iso_string(sub.submitted_at),
+                        'organizers': [{
+                            'id': org.id,
+                            'username': org.username
+                        } for org in sub.assignment.organizers]
+                    } for sub in submissions]
+                    
                     project_data['last_edited_at'] = to_iso_string(last_edited_at)
                     
                     # Get permissions (for display)
                     all_users_with_access = proj.get_all_users_with_access()
                     project_data['collaborator_count'] = len(all_users_with_access)
+                    
+                    # Check if project is frozen
+                    project_data['is_frozen'] = proj.is_frozen()
                     
                     collaboration_projects.append(project_data)
         

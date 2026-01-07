@@ -5,10 +5,15 @@ from app.models.groups import Group
 from werkzeug.exceptions import Unauthorized
 from functools import wraps
 from app.middlewares.auth import require_auth
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db
+from app.utils.assignment_scheduler import check_and_freeze_overdue_assignments
 
 api_bp = Blueprint('api', __name__)
+
+# Auto-freeze cooldown tracking
+_last_auto_freeze_check = None
+_auto_freeze_cooldown = timedelta(minutes=1)
 
 @api_bp.route('/user', methods=['GET'])
 @require_auth
@@ -135,9 +140,22 @@ def get_users(user_info):
 def api_status():
     """Check API status"""
     """Simple endpoint to check if the backend is online"""
+    
+    global _last_auto_freeze_check
+    
+    # Check if we should run auto-freeze (with 1-minute cooldown)
+    now = datetime.now()
+    if _last_auto_freeze_check is None or (now - _last_auto_freeze_check) >= _auto_freeze_cooldown:
+        try:
+            check_and_freeze_overdue_assignments()
+            _last_auto_freeze_check = now
+        except Exception as e:
+            # Don't fail the status check if auto-freeze fails
+            current_app.logger.error(f"Auto-freeze check failed: {str(e)}")
+    
     return jsonify({
         'status': 'ok',
-        'timestamp': datetime.now().isoformat()
+        'timestamp': now.isoformat()
     }), 200
 
 @api_bp.route('/groups', methods=['GET'])

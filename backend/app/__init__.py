@@ -85,6 +85,7 @@ def create_app(debug=False):
     from app.routes.teacher_routes import teacher_bp
     from app.routes.backpack_routes import backpack_bp
     from app.routes.collaboration_routes import collaboration_bp
+    from app.routes.assignment_routes import assignment_bp
     app.register_blueprint(backpack_bp, url_prefix='/api/backpack')
     app.register_blueprint(auth_bp, url_prefix='/')
     app.register_blueprint(api_bp, url_prefix='/api')
@@ -92,6 +93,7 @@ def create_app(debug=False):
     app.register_blueprint(assets_bp, url_prefix='/api/assets')
     app.register_blueprint(collaboration_bp, url_prefix='/api/collaboration')
     app.register_blueprint(teacher_bp, url_prefix='/api/teacher')
+    app.register_blueprint(assignment_bp, url_prefix='/api/assignments')
     
 
     return app

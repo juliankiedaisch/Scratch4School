@@ -12,6 +12,9 @@ from scripts.migrate_sqlite_to_postgres import migrate_sqlite_to_postgres
 migrate_sqlite_to_postgres()
 migrate_postgres_to_new_postgres()
 
+# Import assignment migrations
+from migrations.add_assignments_tables import run_migration as run_assignments_migration
+
 app = create_app(os.environ["DEBUG"])
 
 def run_migrations():
@@ -79,7 +82,13 @@ def run_migrations():
                 print(f"⚠️  Could not check/create enum: {str(e)}")
         
         # ========================================
-        # 3. BASIC CONSISTENCY CHECKS
+        # 3. CLEANUP ORPHANED ENTRIES
+        # ========================================
+        from app.utils.cleanup import cleanup_orphaned_entries
+        cleanup_orphaned_entries()
+        
+        # ========================================
+        # 4. BASIC CONSISTENCY CHECKS
         # ========================================
         print("\n🔍 Running consistency checks...")
         
@@ -152,7 +161,7 @@ def run_migrations():
             print(f"⚠️  Consistency check warning: {str(e)}")
         
         # ========================================
-        # 4. SUMMARY
+        # 5. SUMMARY
         # ========================================
         print("\n" + "="*60)
         print("✅ Database Ready!")
@@ -181,6 +190,12 @@ with app.app_context():
     
 # Run migrations
 run_migrations()
+
+# Run assignment system migration
+try:
+    run_assignments_migration()
+except Exception as e:
+    print(f"⚠️  Assignment migration skipped or already applied: {e}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5006 , debug=True)

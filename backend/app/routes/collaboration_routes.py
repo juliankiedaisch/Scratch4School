@@ -10,6 +10,7 @@ from app.models.projects import (
 )
 from app.models.groups import Group
 from app.models.users import User
+from app.models.assignments import AssignmentSubmission, Assignment
 from app.middlewares.auth import require_auth
 from app.utils.date_utils import to_iso_string
 from datetime import datetime, timezone
@@ -603,6 +604,12 @@ def get_or_load_working_copy(user_info, collab_id):
         if not collab_project:
             return jsonify({'error': 'Collaborative project not found'}), 404
         
+        # Check if project is frozen
+        if collab_project.is_frozen():
+            user_permission = collab_project.get_user_permission_object(user)
+            if user_permission and user_permission.is_frozen:
+                return jsonify({'error': 'This project has been frozen and cannot be modified'}), 403
+        
         # Check WRITE permission
         if not collab_project.has_permission(user, PermissionLevel.WRITE):
             return jsonify({'error': 'You need write permission to create a working copy'}), 403
@@ -746,6 +753,12 @@ def commit_working_copy(user_info, collab_id):
         if not collab_project:
             return jsonify({'error': 'Collaborative project not found'}), 404
         
+        # Check if project is frozen (unless user is admin/teacher)
+        if user.role not in ['admin', 'teacher'] and collab_project.is_frozen():
+            user_permission = collab_project.get_user_permission_object(user)
+            if user_permission and user_permission.is_frozen:
+                return jsonify({'error': 'This project has been frozen and cannot be modified'}), 403
+        
         # Check WRITE permission
         if not collab_project.has_permission(user, PermissionLevel.WRITE):
             return jsonify({'error': 'You need write permission to commit'}), 403
@@ -887,6 +900,7 @@ def get_collaboration_data(user_info, collab_id):
     Get all collaboration data in one call
     ✅ Uses permission system
     ✅ Teachers can specify a student_id to get that student's working copies
+    ✅ Assignment organizers can access submitted projects
     """
     try:
         user = User.query.get(user_info['user_id'])
@@ -897,11 +911,24 @@ def get_collaboration_data(user_info, collab_id):
         
         # Check permission
         user_permission = collab_project.get_user_permission(user)
-        if not user_permission and user.role not in ['admin', 'teacher']:
+        
+        # ✅ NEW: Check if user is an assignment organizer for this project
+        is_assignment_organizer = False
+        if not user_permission:
+            submission = AssignmentSubmission.query.filter_by(
+                collaborative_project_id=collab_id
+            ).first()
+            
+            if submission and submission.assignment.is_organizer(user):
+                is_assignment_organizer = True
+                user_permission = PermissionLevel.READ
+        
+        # Allow access for admins, teachers, or assignment organizers
+        if not user_permission and user.role not in ['admin', 'teacher'] and not is_assignment_organizer:
             return jsonify({'error': 'Access denied'}), 403
         
         if not user_permission:
-            user_permission = PermissionLevel.READ  # Default for admins/teachers without explicit permission
+            user_permission = PermissionLevel.READ  # Default for admins/teachers/organizers without explicit permission
         
         # ✅ Allow teachers to specify a student_id to view their working copies
         student_id = request.args.get('student_id')
@@ -1013,6 +1040,12 @@ def load_commit_as_working_copy(user_info, collab_id, commit_num):
         
         if not collab_project:
             return jsonify({'error': 'Collaborative project not found'}), 404
+        
+        # Check if project is frozen
+        if collab_project.is_frozen():
+            user_permission = collab_project.get_user_permission_object(user)
+            if user_permission and user_permission.is_frozen:
+                return jsonify({'error': 'This project has been frozen and cannot be modified'}), 403
         
         if not user.has_access_to_collaborative_project(collab_project):
             return jsonify({'error': 'Access denied'}), 403

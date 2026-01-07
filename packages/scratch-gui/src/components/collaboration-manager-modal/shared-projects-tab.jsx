@@ -64,7 +64,9 @@ const SharedProjectsTab = ({
                                     </div>
                                     <div className={styles.projectItemMeta}>
                                         <span className={styles.projectBadge}>
-                                            {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
+                                            {projects.length} {projects.length === 1 ? 
+                                                intl.formatMessage(messages.projectSingular) : 
+                                                intl.formatMessage(messages.projectPlural)}
                                         </span>
                                     </div>
                                 </div>
@@ -78,7 +80,7 @@ const SharedProjectsTab = ({
             <div className={styles.contentArea}>
                 {!selectedOwner && (
                     <div className={styles.emptyContent}>
-                        Wähle einen Besitzer aus, um dessen geteilte Projekte anzuzeigen
+                        <FormattedMessage {...messages.selectOwnerPrompt} />
                     </div>
                 )}
                 

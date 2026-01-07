@@ -4,6 +4,8 @@ import { FormattedMessage } from 'react-intl';
 import styles from './collaboration-manager-modal.css';
 import userIcon from './icons/icon--user.svg';
 import versionIcon from './icons/icon--version.svg';
+import AssignmentSubmissionDialog from './assignment-submission-dialog.jsx';
+import assignmentService from '../../lib/assignment-service';
 
 /**
  * Collaboration Projects Tab - Shows projects where user has write/admin permission but is not owner
@@ -31,6 +33,7 @@ const CollaborationProjectsTab = ({
     handleShowAddGroup,
     fetchAvailableUsers,
     fetchAvailableGroups,
+    onRefreshProjects,
     intl,
     messages
 }) => {
@@ -43,6 +46,13 @@ const CollaborationProjectsTab = ({
     // TODO: Consider extracting to a custom hook for better maintainability
     const [isEditingTitle, setIsEditingTitle] = React.useState(false);
     const [editedTitle, setEditedTitle] = React.useState('');
+    
+    // State for assignment submission dialog
+    const [showAssignmentDialog, setShowAssignmentDialog] = React.useState(false);
+    const [withdrawingSubmission, setWithdrawingSubmission] = React.useState(null);
+    const [showWithdrawConfirm, setShowWithdrawConfirm] = React.useState(false);
+    const [withdrawAssignmentId, setWithdrawAssignmentId] = React.useState(null);
+    const [withdrawError, setWithdrawError] = React.useState(null);
     
     const handleStartEditTitle = () => {
         setEditedTitle(selectedProject.name || '');
@@ -66,6 +76,43 @@ const CollaborationProjectsTab = ({
             handleSaveTitle();
         } else if (e.key === 'Escape') {
             handleCancelEditTitle();
+        }
+    };
+    
+    const handleSubmitToAssignment = async (assignmentId) => {
+        try {
+            await assignmentService.submitAssignment(assignmentId, selectedProject.id);
+            // Refresh project data to show new submission
+            if (onRefreshProjects) {
+                await onRefreshProjects();
+            }
+        } catch (error) {
+            console.error('Error submitting to assignment:', error);
+            throw error;
+        }
+    };
+    
+    const handleWithdrawSubmission = (assignmentId) => {
+        setWithdrawAssignmentId(assignmentId);
+        setShowWithdrawConfirm(true);
+    };
+    
+    const confirmWithdrawSubmission = async () => {
+        setShowWithdrawConfirm(false);
+        
+        try {
+            setWithdrawingSubmission(withdrawAssignmentId);
+            await assignmentService.withdrawSubmission(withdrawAssignmentId, selectedProject.id);
+            // Refresh project data to remove submission
+            if (onRefreshProjects) {
+                await onRefreshProjects();
+            }
+        } catch (error) {
+            console.error('Error withdrawing submission:', error);
+            setWithdrawError(error.message || intl.formatMessage(messages.withdrawSubmissionError));
+        } finally {
+            setWithdrawingSubmission(null);
+            setWithdrawAssignmentId(null);
         }
     };
 
@@ -129,6 +176,17 @@ const CollaborationProjectsTab = ({
                                         </span>
                                     ))}
                                     
+                                    {project.assignment_submissions && project.assignment_submissions.length > 0 && (
+                                        <span className={styles.assignmentBadge} title={`Submitted to ${project.assignment_submissions.length} assignment(s)`}>
+                                            📝 {project.assignment_submissions.length}
+                                        </span>
+                                    )}
+                                    {project.is_frozen && (
+                                        <span className={styles.frozenBadge} title="Project is frozen">
+                                            🔒 Frozen
+                                        </span>
+                                    )}
+                                    
                                     {project.has_working_copy && (
                                         <span className={styles.workingCopyBadge} title="Änderungen vorhanden">
                                             ⚙️
@@ -146,26 +204,28 @@ const CollaborationProjectsTab = ({
                 
                 {!selectedProject && (
                     <div className={styles.emptyContent}>
-                        Klicke auf ein Projekt um mehr Informationen zu erhalten.
+                        <FormattedMessage {...messages.selectProjectPrompt} />
                     </div>
                 )}
                 
                 {/* Project Content */}
                 {selectedProject && (
                     <>
-                        {/* Project Header with Large Thumbnail */}
-                        <div className={styles.projectHeader}>
-                            <div className={styles.projectThumbnailLarge}>
-                                <img 
-                                    src={selectedProject.thumbnail_url || '/static/images/default-project.png'}
-                                    alt={selectedProject.name || 'Project'}
-                                    onError={(e) => {
-                                        e.target.src = '/static/default-thumbnail.png';
-                                        e.target.onerror = null;
-                                    }}
-                                />
-                            </div>
-                            <div className={styles.projectHeaderInfo}>
+                        {/* Project Info Container: Header + Permissions */}
+                        <div className={styles.projectInfoContainer}>
+                            {/* Project Header with Large Thumbnail */}
+                            <div className={styles.projectHeader}>
+                                <div className={styles.projectThumbnailLarge}>
+                                    <img 
+                                        src={selectedProject.thumbnail_url || '/static/images/default-project.png'}
+                                        alt={selectedProject.name || 'Project'}
+                                        onError={(e) => {
+                                            e.target.src = '/static/default-thumbnail.png';
+                                            e.target.onerror = null;
+                                        }}
+                                    />
+                                </div>
+                                <div className={styles.projectHeaderInfo}>
                                 <div className={styles.projectHeaderTitleContainer}>
                                     {!isEditingTitle ? (
                                         <>
@@ -177,7 +237,7 @@ const CollaborationProjectsTab = ({
                                                 <button
                                                     className={styles.editTitleButton}
                                                     onClick={handleStartEditTitle}
-                                                    title="Titel bearbeiten"
+                                                    title={intl.formatMessage(messages.editTitle)}
                                                 >
                                                     ✏️
                                                 </button>
@@ -228,29 +288,98 @@ const CollaborationProjectsTab = ({
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* Submit to Assignment Button */}
+                            {(selectedProject.permission === 'WRITE' || selectedProject.permission === 'ADMIN') && (
+                                <div className={styles.projectActionsColumn}>
+                                    <div className={styles.projectActions}>
+                                        {/* Show Submit or Withdraw button based on submission status */}
+                                        {selectedProject.assignment_submissions && selectedProject.assignment_submissions.length > 0 ? (
+                                            <button
+                                                className={styles.withdrawAssignmentButton}
+                                                onClick={() => handleWithdrawSubmission(selectedProject.assignment_submissions[0].assignment_id)}
+                                                disabled={withdrawingSubmission === selectedProject.assignment_submissions[0].assignment_id || selectedProject.is_frozen}
+                                                title={selectedProject.is_frozen ? 'Cannot withdraw from frozen project' : ''}
+                                            >
+                                                {withdrawingSubmission === selectedProject.assignment_submissions[0].assignment_id ? '...' : <FormattedMessage {...messages.withdrawFromAssignment} />}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className={styles.submitToAssignmentButton}
+                                                onClick={() => setShowAssignmentDialog(true)}
+                                                disabled={selectedProject.is_frozen}
+                                                title={selectedProject.is_frozen ? 'Cannot submit frozen project' : ''}
+                                            >
+                                                📝 <FormattedMessage {...messages.submitToAssignment} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Assignment Submission Info */}
+                                    {selectedProject.assignment_submissions && selectedProject.assignment_submissions.length > 0 && (
+                                        <div className={styles.assignmentInfoSection}>
+                                            <div className={styles.assignmentInfoItem}>
+                                                <span className={styles.assignmentInfoLabel}><FormattedMessage {...messages.submittedToLabel} /></span>
+                                                <span className={styles.assignmentInfoValue}>{selectedProject.assignment_submissions[0].assignment_name}</span>
+                                            </div>
+                                            {selectedProject.assignment_submissions[0].organizers && (
+                                                <div className={styles.assignmentInfoItem}>
+                                                    <span className={styles.assignmentInfoLabel}><FormattedMessage {...messages.organizerLabel} /></span>
+                                                    <span className={styles.assignmentInfoValue}>
+                                                        {selectedProject.assignment_submissions[0].organizers.map(org => org.username).join(', ')}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {selectedProject.is_frozen && (
+                                                <div className={styles.assignmentInfoItem}>
+                                                    <span className={styles.assignmentInfoLabel}><FormattedMessage {...messages.statusLabel} /></span>
+                                                    <span className={styles.assignmentInfoValue}>
+                                                        🔒 <FormattedMessage {...messages.frozenStatus} />
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Members Section (Users with Direct Permissions) */}
+                        {/* Permissions Section (Members & Groups combined) */}
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
                                 <div className={styles.sectionTitle}>
-                                    <img src={userIcon} alt="Members" className={styles.sectionIcon} />
-                                    <FormattedMessage {...messages.members} />
+                                    <img src={userIcon} alt="Permissions" className={styles.sectionIcon} />
+                                    <FormattedMessage {...messages.permissions} />
                                     <span className={styles.badge}>
-                                        {collaborators.filter(c => c.access_via !== 'owner' && !c.access_via.startsWith('group:')).length}
+                                        {collaborators.filter(c => c.access_via !== 'owner').length + sharedGroups.length}
                                     </span>
                                 </div>
-                                {/* Admins can add members */}
+                                {/* Admins can add members and groups */}
                                 {selectedProject.permission === 'ADMIN' && (
-                                    <button
-                                        className={styles.addButton}
-                                        onClick={() => {
-                                            fetchAvailableUsers();
-                                            handleShowAddMember(true);
-                                        }}
-                                    >
-                                        + <FormattedMessage {...messages.addCollaborator} />
-                                    </button>
+                                    <div className={styles.addButtonGroup}>
+                                        <button
+                                            className={styles.addButton}
+                                            onClick={() => {
+                                                fetchAvailableUsers();
+                                                handleShowAddMember(true);
+                                            }}
+                                            disabled={selectedProject.is_frozen}
+                                            title={selectedProject.is_frozen ? 'Cannot modify frozen project' : ''}
+                                        >
+                                            + <FormattedMessage {...messages.addMember} />
+                                        </button>
+                                        <button
+                                            className={styles.addButton}
+                                            onClick={() => {
+                                                fetchAvailableGroups();
+                                                handleShowAddGroup(true);
+                                            }}
+                                            disabled={selectedProject.is_frozen}
+                                            title={selectedProject.is_frozen ? 'Cannot modify frozen project' : ''}
+                                        >
+                                            + <FormattedMessage {...messages.addGroup} />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                             
@@ -302,6 +431,8 @@ const CollaborationProjectsTab = ({
                                                             collab.user.id,
                                                             e.target.value
                                                         )}
+                                                        disabled={selectedProject.is_frozen}
+                                                        title={selectedProject.is_frozen ? 'Cannot modify frozen project' : ''}
                                                     >
                                                         <option value="READ">
                                                             {intl.formatMessage(messages.permissionRead)}
@@ -316,7 +447,8 @@ const CollaborationProjectsTab = ({
                                                     <button
                                                         className={styles.removeButton}
                                                         onClick={() => handleRevokePermission(collab.permission_id)}
-                                                        title={collab.permission_id || 'unknown'}
+                                                        title={selectedProject.is_frozen ? 'Cannot modify frozen project' : collab.permission_id || 'unknown'}
+                                                        disabled={selectedProject.is_frozen}
                                                     >
                                                         ×
                                                     </button>
@@ -334,34 +466,8 @@ const CollaborationProjectsTab = ({
                                         </div>
                                     ))
                                 }
-                            </div>
-                        </div>
-
-                        {/* Groups Section */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
-                                <div className={styles.sectionTitle}>
-                                    <span className={styles.sectionIcon}>👥</span>
-                                    <FormattedMessage {...messages.groups} />
-                                    <span className={styles.badge}>
-                                        {sharedGroups.length}
-                                    </span>
-                                </div>
-                                {/* Admins can add groups */}
-                                {selectedProject.permission === 'ADMIN' && (
-                                    <button
-                                        className={styles.addButton}
-                                        onClick={() => {
-                                            fetchAvailableGroups();
-                                            handleShowAddGroup(true);
-                                        }}
-                                    >
-                                        + <FormattedMessage {...messages.addGroup} />
-                                    </button>
-                                )}
-                            </div>
-                            
-                            <div className={styles.membersList}>
+                                
+                                {/* Group Permissions */}
                                 {sharedGroups
                                     .map((collab, index) => {
                                         return (
@@ -388,6 +494,8 @@ const CollaborationProjectsTab = ({
                                                                 collab.group.id,
                                                                 e.target.value
                                                             )}
+                                                            disabled={selectedProject.is_frozen}
+                                                            title={selectedProject.is_frozen ? 'Cannot modify frozen project' : ''}
                                                         >
                                                             <option value="READ">
                                                                 {intl.formatMessage(messages.permissionRead)}
@@ -403,7 +511,8 @@ const CollaborationProjectsTab = ({
                                                         <button
                                                             className={styles.removeButton}
                                                             onClick={() => handleRevokePermission(collab.permission_id)}
-                                                            title="Remove group"
+                                                            title={selectedProject.is_frozen ? 'Cannot modify frozen project' : 'Remove group'}
+                                                            disabled={selectedProject.is_frozen}
                                                         >
                                                             ×
                                                         </button>
@@ -423,13 +532,15 @@ const CollaborationProjectsTab = ({
                                     })
                                 }
                                 
-                                {collaborators.filter(c => c.access_via.startsWith('group:')).length === 0 && (
+                                {collaborators.filter(c => c.access_via !== 'owner').length === 0 && sharedGroups.length === 0 && (
                                     <div className={styles.emptyMessage}>
-                                        Keine Gruppen haben Zugriff auf dieses Projekt
+                                        No members or groups have access to this project
                                     </div>
                                 )}
                             </div>
                         </div>
+                        </div>
+                        {/* End Project Info Container */}
 
                         {/* Commits Section */}
                         <div className={styles.section}>
@@ -499,6 +610,8 @@ const CollaborationProjectsTab = ({
                                                         <button
                                                             className={styles.actionButtonPrimary}
                                                             onClick={() => handleWorkOnCommit(commit.commit_number)}
+                                                            disabled={selectedProject.is_frozen}
+                                                            title={selectedProject.is_frozen ? 'Cannot modify frozen project' : ''}
                                                         >
                                                             🔨 <FormattedMessage {...messages.workHere} />
                                                         </button>
@@ -507,6 +620,8 @@ const CollaborationProjectsTab = ({
                                                             <button
                                                                 className={styles.actionButton}
                                                                 onClick={() => handleLoadWorkingCopy(commit.project_id)}
+                                                                disabled={selectedProject.is_frozen}
+                                                                title={selectedProject.is_frozen ? 'Cannot open frozen project' : ''}
                                                             >
                                                                 📂 <FormattedMessage {...messages.open} />
                                                             </button>
@@ -515,6 +630,8 @@ const CollaborationProjectsTab = ({
                                                                 <button
                                                                     className={styles.actionButtonPrimary}
                                                                     onClick={() => handleShowCommitDialog(true)}
+                                                                    disabled={selectedProject.is_frozen}
+                                                                    title={selectedProject.is_frozen ? 'Cannot commit to frozen project' : ''}
                                                                 >
                                                                     ✅ <FormattedMessage {...messages.commit} />
                                                                 </button>
@@ -523,6 +640,8 @@ const CollaborationProjectsTab = ({
                                                             <button
                                                                 className={styles.actionButtonDanger}
                                                                 onClick={() => handleShowResetConfirm(commit.project_id)}
+                                                                disabled={selectedProject.is_frozen}
+                                                                title={selectedProject.is_frozen ? 'Cannot delete from frozen project' : ''}
                                                             >
                                                                 🗑️ <FormattedMessage {...messages.deleteWorkingCopy} />
                                                             </button>
@@ -538,6 +657,66 @@ const CollaborationProjectsTab = ({
                     </>
                 )}
             </div>
+            
+            {/* Assignment Submission Dialog */}
+            {showAssignmentDialog && selectedProject && (
+                <AssignmentSubmissionDialog
+                    projectId={selectedProject.id}
+                    currentSubmissions={selectedProject.assignment_submissions || []}
+                    onSubmit={handleSubmitToAssignment}
+                    onClose={() => setShowAssignmentDialog(false)}
+                    intl={intl}
+                />
+            )}
+            
+            {/* Withdraw Confirmation Dialog */}
+            {showWithdrawConfirm && (
+                <div className={styles.dialogOverlay}>
+                    <div className={styles.dialog}>
+                        <div className={styles.dialogHeader}>
+                            <h3>⚠️ <FormattedMessage {...messages.confirm} /></h3>
+                            <button className={styles.dialogClose} onClick={() => setShowWithdrawConfirm(false)}>×</button>
+                        </div>
+                        <div className={styles.dialogBody}>
+                            <p style={{fontSize: '1rem', lineHeight: '1.5'}}>
+                                <FormattedMessage {...messages.confirmWithdrawSubmission} />
+                            </p>
+                        </div>
+                        <div className={styles.dialogFooter}>
+                            <button className={styles.cancelButton} onClick={() => setShowWithdrawConfirm(false)}>
+                                <FormattedMessage {...messages.cancel} />
+                            </button>
+                            <button
+                                className={styles.confirmButton}
+                                style={{ backgroundColor: '#dc3545' }}
+                                onClick={confirmWithdrawSubmission}
+                            >
+                                <FormattedMessage {...messages.withdrawFromAssignment} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Withdraw Error Dialog */}
+            {withdrawError && (
+                <div className={styles.dialogOverlay}>
+                    <div className={styles.dialog}>
+                        <div className={styles.dialogHeader}>
+                            <h3>❌ Error</h3>
+                            <button className={styles.dialogClose} onClick={() => setWithdrawError(null)}>×</button>
+                        </div>
+                        <div className={styles.dialogBody}>
+                            <p style={{fontSize: '1rem', lineHeight: '1.5'}}>{withdrawError}</p>
+                        </div>
+                        <div className={styles.dialogFooter}>
+                            <button className={styles.cancelButton} onClick={() => setWithdrawError(null)}>
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
@@ -565,6 +744,7 @@ CollaborationProjectsTab.propTypes = {
     handleShowAddGroup: PropTypes.func.isRequired,
     fetchAvailableUsers: PropTypes.func.isRequired,
     fetchAvailableGroups: PropTypes.func.isRequired,
+    onRefreshProjects: PropTypes.func,
     intl: PropTypes.object.isRequired,
     messages: PropTypes.object.isRequired
 };

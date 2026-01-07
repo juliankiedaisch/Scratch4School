@@ -59,6 +59,36 @@
     filter: brightness(0) invert(1);
 }
 
+.main-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.main-tab-button {
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.main-tab-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.active-main-tab {
+    background: white;
+    color: $ui-blue;
+}
+
+.active-main-tab:hover {
+    background: white;
+}
+
 .close-button {
     display: flex;
     background: none;
@@ -217,13 +247,20 @@
    PROJECT ACTIONS (TOP BAR)
    ============================================ */
 
+.project-actions-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+}
+
 .project-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid hsla(0, 0%, 0%, 0.15);
-    background-color: #f8f9fa;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    justify-self: end;
+    width: 100%;
 }
 
 .share-project-button {
@@ -281,11 +318,22 @@
    ============================================ */
 
 .project-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 240px 1fr auto;
     gap: 20px;
     padding: 24px;
     background-color: #f8f9fa;
+    align-items: start;
+}
+
+/* Add border-bottom only when not inside project-info-container */
+.content-area > .project-header {
     border-bottom: 1px solid hsla(0, 0%, 0%, 0.15);
+}
+
+/* When inside project-info-container, no border-bottom */
+.project-info-container .project-header {
+    border-bottom: none;
 }
 
 .project-thumbnail-large {
@@ -305,10 +353,9 @@
 }
 
 .project-header-info {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     min-width: 0;
 }
 
@@ -415,12 +462,29 @@
    SECTIONS (MEMBERS, COMMITS)
    ============================================ */
 
+/* Container to group project header and permissions together */
+.project-info-container {
+    margin-bottom: 32px;
+    background: white;
+    border: 1px solid $ui-tertiary;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
 .section {
     margin-bottom: 32px;
     background: white;
     border: 1px solid $ui-tertiary;
     border-radius: 12px;
     overflow: hidden;
+}
+
+/* When section is inside project-info-container, remove its own border */
+.project-info-container .section {
+    margin-bottom: 0;
+    border: none;
+    border-radius: 0;
+    border-top: 1px solid $ui-tertiary;
 }
 
 .section-header {
@@ -473,6 +537,23 @@
 
 .add-button:hover {
     background-color: darken($motion-primary, 10%);
+}
+
+.add-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #ccc;
+}
+
+.add-button:disabled:hover {
+    background-color: #ccc;
+    transform: none;
+}
+
+.add-button-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 /* ============================================
@@ -543,6 +624,17 @@
 .remove-button:hover {
     background-color: #c82333;
     transform: scale(1.1);
+}
+
+.remove-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #ccc;
+}
+
+.remove-button:disabled:hover {
+    background-color: #ccc;
+    transform: none;
 }
 
 /* ============================================
@@ -692,6 +784,26 @@
 .action-button-danger:hover {
     background-color: #dc3545;
     color: white;
+}
+
+.action-button:disabled,
+.action-button-primary:disabled,
+.action-button-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #ccc;
+    border-color: #ccc;
+    color: #666;
+}
+
+.action-button:disabled:hover,
+.action-button-primary:disabled:hover,
+.action-button-danger:disabled:hover {
+    background-color: #ccc;
+    border-color: #ccc;
+    color: #666;
+    transform: none;
+    box-shadow: none;
 }
 
 /* ============================================
@@ -979,60 +1091,6 @@
 }
 
 /* ============================================
-   USER LIST (Add Member Dialog)
-   ============================================ */
-
-.user-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 20px;
-}
-
-.user-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin-bottom: 4px;
-}
-
-.user-item:hover {
-    background-color: #f8f9fa;
-}
-
-.user-item-selected {
-    background-color: #e3f2fd;
-    border: 2px solid $ui-blue;
-}
-
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, $ui-blue 0%, $motion-primary 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-}
-
-.user-name {
-    flex: 1;
-    font-weight: 600;
-    color: $text-primary;
-}
-
-.no-users {
-    text-align: center;
-    padding: 40px;
-    color: $text-primary-transparent;
-}
-
-/* ============================================
    DIALOG BUTTONS
    ============================================ */
 
@@ -1245,38 +1303,6 @@
 }
 
 /* ============================================
-   TAB NAVIGATION
-   ============================================ */
-
-.tabs-container {
-    display: flex;
-    border-bottom: 1px solid $ui-tertiary;
-    background-color: #f8f9fa;
-}
-
-.tab {
-    padding: 12px 24px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: $text-primary-transparent;
-}
-
-.tab:hover {
-    background-color: rgba(0, 0, 0, 0.03);
-    color: $text-primary;
-}
-
-.active-tab {
-    font-weight: 700;
-    color: $motion-primary;
-    border-bottom: 3px solid $motion-primary;
-    margin-bottom: -1px;
-    background-color: white;
-}
-
-/* ============================================
    SHARED PROJECTS - THUMBNAILS
    ============================================ */
 
@@ -1429,16 +1455,6 @@
    ============================================ */
 
 @media (max-width: 768px) {
-    .tabs-container {
-        flex-direction: row;
-        overflow-x: auto;
-    }
-    
-    .tab {
-        white-space: nowrap;
-        padding: 10px 16px;
-    }
-    
     .shared-projects-grid {
         grid-template-columns: 1fr;
     }
@@ -1467,6 +1483,16 @@
 
 .permissionSelect:hover {
     border-color: #4C97FF;
+}
+
+.permissionSelect:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+}
+
+.permissionSelect:disabled:hover {
+    border-color: #ddd;
 }
 
 .permissionBadge {
@@ -1516,4 +1542,323 @@
     text-align: center;
     color: #999;
     font-style: italic;
+}
+
+/* ============================================
+   ASSIGNMENT SUBMISSION DIALOG
+   ============================================ */
+
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 520;
+}
+
+.dialog-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: $text-primary;
+}
+
+.dialog-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.dialog-label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: $text-primary;
+}
+
+.assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.assignment-item {
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.assignment-item:hover:not(.disabled) {
+    border-color: $ui-blue;
+    background-color: #f8f9fa;
+}
+
+.assignment-item.selected {
+    border-color: $ui-blue;
+    background-color: #e3f2fd;
+}
+
+.assignment-item.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+}
+
+.assignment-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.assignment-name {
+    font-weight: 600;
+    color: $text-primary;
+    font-size: 1rem;
+}
+
+.assignment-description {
+    color: $text-primary-transparent;
+    font-size: 0.875rem;
+    margin-bottom: 8px;
+}
+
+.assignment-due-date {
+    color: $motion-tertiary;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.submitted-badge {
+    padding: 4px 12px;
+    background-color: #4caf50;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.dialog-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.dialog-button-primary,
+.dialog-button-secondary {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dialog-button-primary {
+    background-color: $ui-blue;
+    color: white;
+}
+
+.dialog-button-primary:hover:not(:disabled) {
+    background-color: $looks-secondary;
+}
+
+.dialog-button-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dialog-button-secondary {
+    background-color: #f0f0f0;
+    color: $text-primary;
+}
+
+.dialog-button-secondary:hover:not(:disabled) {
+    background-color: #e0e0e0;
+}
+
+/* ============================================
+   ASSIGNMENT BADGES
+   ============================================ */
+
+.submit-to-assignment-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+    margin-top: 12px;
+}
+
+.submit-to-assignment-button:hover {
+    background-color: #45a049;
+}
+
+.withdraw-assignment-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+    margin-top: 8px;
+}
+
+.withdraw-assignment-button:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.withdraw-assignment-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.assignment-info-section {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: #e3f2fd;
+    border-left: 4px solid #4caf50;
+    border-radius: 4px;
+}
+
+.assignment-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.assignment-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.assignment-info-label {
+    font-weight: 600;
+    font-size: 0.813rem;
+    color: $text-primary;
+    min-width: 90px;
+}
+
+.assignment-info-value {
+    font-size: 0.813rem;
+    color: $text-primary-transparent;
+}
+
+.assignment-submissions-section {
+    margin-top: 16px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.section-subtitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 12px 0;
+}
+
+.assignment-badges-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.assignment-submission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.assignment-badge {
+    padding: 4px 10px;
+    background-color: #4caf50;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.frozen-badge {
+    padding: 4px 10px;
+    background-color: #ff9800;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.withdraw-button {
+    padding: 4px 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.withdraw-button:hover:not(:disabled) {
+    background-color: #c82333;
+    transform: scale(1.05);
+}
+
+.withdraw-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
