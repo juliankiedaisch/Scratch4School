@@ -863,7 +863,20 @@ def get_commit_history(user_info, collab_id):
             return jsonify({'error': 'Collaborative project not found'}), 404
         
         # Check READ permission
-        if not collab_project.get_user_permission(user):
+        user_permission = collab_project.get_user_permission(user)
+        
+        # Allow access for admins, teachers, or assignment organizers
+        if not user_permission:
+            if user.role in ['admin', 'teacher']:
+                user_permission = PermissionLevel.READ
+            else:
+                submission = AssignmentSubmission.query.filter_by(
+                    collaborative_project_id=collab_id
+                ).first()
+                if submission and submission.assignment.is_organizer(user):
+                    user_permission = PermissionLevel.READ
+        
+        if not user_permission:
             return jsonify({'error': 'Access denied'}), 403
         
         commits = db.session.query(Commit)\
@@ -1142,7 +1155,19 @@ def get_commit(user_info, collab_id, commit_num):
         if not collab_project:
             return jsonify({'error': 'Collaborative project not found'}), 404
         
-        if not user.has_access_to_collaborative_project(collab_project):
+        # Check permission with teacher/admin/organizer fallback
+        has_access = user.has_access_to_collaborative_project(collab_project)
+        if not has_access:
+            if user.role in ['admin', 'teacher']:
+                has_access = True
+            else:
+                submission = AssignmentSubmission.query.filter_by(
+                    collaborative_project_id=collab_id
+                ).first()
+                if submission and submission.assignment.is_organizer(user):
+                    has_access = True
+        
+        if not has_access:
             return jsonify({'error': 'Access denied'}), 403
         
         commit = Commit.query.filter_by(
@@ -1174,7 +1199,19 @@ def download_commit(user_info, collab_id, commit_num):
         if not collab_project:
             return jsonify({'error': 'Collaborative project not found'}), 404
         
-        if not user.has_access_to_collaborative_project(collab_project):
+        # Check permission with teacher/admin/organizer fallback
+        has_access = user.has_access_to_collaborative_project(collab_project)
+        if not has_access:
+            if user.role in ['admin', 'teacher']:
+                has_access = True
+            else:
+                submission = AssignmentSubmission.query.filter_by(
+                    collaborative_project_id=collab_id
+                ).first()
+                if submission and submission.assignment.is_organizer(user):
+                    has_access = True
+        
+        if not has_access:
             return jsonify({'error': 'Access denied'}), 403
         
         commit = Commit.query.filter_by(
