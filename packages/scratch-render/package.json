@@ -31,7 +31,7 @@
     "TRADEMARK"
   ],
   "scripts": {
-    "build": "webpack --progress && npm run docs",
+    "build": "webpack --progress",
     "clean": "rimraf dist playground",
     "docs": "typedoc",
     "lint": "eslint",
