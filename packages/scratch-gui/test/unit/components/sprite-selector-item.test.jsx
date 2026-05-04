@@ -79,7 +79,7 @@ describe('SpriteSelectorItemComponent', () => {
 
     test('triggers callback when CloseButton component is clicked', () => {
         const {container} = renderWithIntl(getComponent());
-        const deleteButton = container.querySelector('div[role="button"][aria-label="Delete"]');
+        const deleteButton = container.querySelector('button[aria-label="Delete"]');
         fireEvent.click(deleteButton);
         expect(onDeleteButtonClick).toHaveBeenCalled();
     });

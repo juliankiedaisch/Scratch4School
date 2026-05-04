@@ -141,14 +141,14 @@ class ActionMenu extends React.Component {
                     arrowColor="var(--tooltip-arrow-color)"
                 />
                 <div className={styles.moreButtonsOuter}>
-                    <div className={styles.moreButtons}>
+                    <ul className={styles.moreButtons}>
                         {(moreButtons || []).map(({img, title, onClick: handleClick,
                             fileAccept, fileChange, fileInput, fileMultiple}, keyId) => {
                             const isComingSoon = !handleClick;
                             const hasFileInput = fileInput;
                             const tooltipId = `${this.mainTooltipId}-${title}`;
                             return (
-                                <div key={`${tooltipId}-${keyId}`}>
+                                <li key={`${tooltipId}-${keyId}`}>
                                     <button
                                         aria-label={title}
                                         className={classNames(styles.button, styles.moreButton, {
@@ -182,10 +182,10 @@ class ActionMenu extends React.Component {
                                         place={tooltipPlace || 'left'}
                                         arrowColor="var(--tooltip-arrow-color)"
                                     />
-                                </div>
+                                </li>
                             );
                         })}
-                    </div>
+                    </ul>
                 </div>
             </div>
         );

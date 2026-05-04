@@ -47,6 +47,15 @@
     flex-direction: row;
     align-items: center;
     overflow-x: auto;
+
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+    line-height: normal;
+}
+
+.backpack-list-inner {
+    margin: 0;
 }
 
 .drag-over:after {

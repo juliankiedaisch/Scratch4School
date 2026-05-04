@@ -1,5 +1,12 @@
 @import "../../css/colors.css";
 
+.green-flag-button {
+    border: none;
+    background: none;
+    padding: 0;
+    line-height: 0;
+}
+
 .green-flag {
     width: 2rem;
     height: 2rem;

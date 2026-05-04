@@ -50,6 +50,15 @@ $fade-out-distance: 100px;
     overflow-y: scroll;
     display: flex;
     flex-direction: column;
+    
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    line-height: normal;
+}
+
+.list-area li {
+    margin: 0;
 }
 
 .list-area:after {

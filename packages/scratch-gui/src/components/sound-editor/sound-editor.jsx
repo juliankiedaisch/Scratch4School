@@ -149,6 +149,7 @@ const SoundEditor = props => {
                 <div className={styles.inputGroup}>
                     <Label text={intl.formatMessage(messages.sound)}>
                         <BufferedInput
+                            // TODO: Why 1? Update when working on correct order of navigation
                             tabIndex="1"
                             type="text"
                             value={props.name}

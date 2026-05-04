@@ -705,6 +705,7 @@ class MenuBar extends React.Component {
                             )}
                             aria-label={this.props.ariaLabel}
                             role={this.props.ariaRole}
+                            element="header"
                         >
                             <div className={styles.mainMenu}>
                                 <div className={styles.fileGroup}>
@@ -720,7 +721,7 @@ class MenuBar extends React.Component {
                                             onClick={this.props.onClickLogo}
                                         />
                                     </div>
-                                    {(this.props.canChangeTheme || this.props.canChangeLanguage || this.props.canChangeTheme) && 
+                                    {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) && 
                                     (<SettingsMenu
                                         canChangeLanguage={this.props.canChangeLanguage}
                                         canChangeColorMode={this.props.canChangeColorMode}

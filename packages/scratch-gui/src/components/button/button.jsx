@@ -11,6 +11,7 @@ const ButtonComponent = ({
     iconSrc,
     onClick,
     children,
+    componentRef,
     ...props
 }) => {
 
@@ -27,18 +28,18 @@ const ButtonComponent = ({
     );
 
     return (
-        <span
+        <button
             className={classNames(
                 styles.outlinedButton,
                 className
             )}
-            role="button"
             onClick={onClick}
+            ref={componentRef}
             {...props}
         >
             {icon}
             <div className={styles.content}>{children}</div>
-        </span>
+        </button>
     );
 };
 
@@ -48,7 +49,11 @@ ButtonComponent.propTypes = {
     disabled: PropTypes.bool,
     iconClassName: PropTypes.string,
     iconSrc: PropTypes.string,
-    onClick: PropTypes.func
+    onClick: PropTypes.func,
+    componentRef: PropTypes.oneOfType([
+        PropTypes.func,
+        PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    ])
 };
 
 export default ButtonComponent;

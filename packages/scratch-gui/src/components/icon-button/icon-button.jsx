@@ -10,13 +10,12 @@ const IconButton = ({
     title,
     onClick
 }) => (
-    <div
+    <button
         className={classNames(
             styles.container,
             className,
             disabled ? styles.disabled : null
         )}
-        role="button"
         onClick={disabled ? null : onClick}
     >
         <img
@@ -27,7 +26,7 @@ const IconButton = ({
         <div className={styles.title}>
             {title}
         </div>
-    </div>
+    </button>
 );
 
 IconButton.propTypes = {

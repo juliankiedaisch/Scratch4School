@@ -342,7 +342,9 @@
   "gui.teacherModal.commitMessage": "Nachricht",
   "gui.teacherModal.committedBy": "Von",
   "gui.teacherModal.basedOn": "Basierend auf",
-  "gui.teacherModal.hasChanges": "Hat Änderungen"
+  "gui.teacherModal.hasChanges": "Hat Änderungen",
 
+  "gui.stageHeader.thumbnailTooltipTitle" : "Projektvorschau",
+  "gui.stageHeader.saveThumbnailMessage" : "Die Projektvorschau wird aktualisiert, sobald du dein Projekt speicherst."
 }
 

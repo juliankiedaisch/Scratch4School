@@ -12,12 +12,16 @@ const AssetPanel = props => {
         aria-label={ariaLabel}
         role={ariaRole}
         className={styles.wrapper}
+        element="section"
     >
         <Selector
             className={styles.selector}
             {...restProps}
         />
-        <Box className={styles.detailArea}>
+        <Box
+            className={styles.detailArea}
+            element="section"
+        >
             {props.children}
         </Box>
     </Box>);

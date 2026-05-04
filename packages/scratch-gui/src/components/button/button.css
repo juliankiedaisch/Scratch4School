@@ -10,6 +10,10 @@
     padding-left: .75rem;
     padding-right: .75rem;
     user-select: none;
+
+    background: inherit;
+    border: inherit;
+    color: inherit;
 }
 
 .icon {

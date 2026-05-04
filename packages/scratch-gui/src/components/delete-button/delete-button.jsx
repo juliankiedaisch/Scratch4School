@@ -6,13 +6,12 @@ import styles from './delete-button.css';
 import deleteIcon from './icon--delete.svg';
 
 const DeleteButton = ({className, onClick, isConfirmationModalOpened, tabIndex = 0}) => (
-    <div
+    <button
         aria-label="Delete"
         className={classNames(
             styles.deleteButton,
             className
         )}
-        role="button"
         tabIndex={tabIndex}
         onClick={onClick}
     >
@@ -26,7 +25,7 @@ const DeleteButton = ({className, onClick, isConfirmationModalOpened, tabIndex =
                 src={deleteIcon}
             />
         </div>
-    </div>
+    </button>
 
 );
 

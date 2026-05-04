@@ -46,7 +46,7 @@ describe('Sound Editor Component', () => {
                 trimStart={0.25}
             />
         );
-        const deleteButton = [...container.querySelectorAll('div[role="button"]')]
+        const deleteButton = [...container.querySelectorAll('button')]
             .find(el => el.textContent.trim() === 'Delete');
 
         fireEvent.click(deleteButton);
@@ -105,7 +105,7 @@ describe('Sound Editor Component', () => {
                 <SoundEditor {...props} />
             );
 
-            const buttons = [...container.querySelectorAll('div[role="button"]')];
+            const buttons = [...container.querySelectorAll('button')];
             getButtonByText = text => buttons.find(div => div.textContent.trim() === text);
         });
 

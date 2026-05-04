@@ -21,7 +21,7 @@ class SortableAsset extends React.Component {
     }
     render () {
         return (
-            <div
+            <li
                 className={this.props.className}
                 ref={this.setRef}
                 style={{
@@ -29,7 +29,7 @@ class SortableAsset extends React.Component {
                 }}
             >
                 {this.props.children}
-            </div>
+            </li>
         );
     }
 }

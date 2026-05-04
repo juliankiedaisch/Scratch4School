@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
 import React, {useEffect, useCallback, useContext} from 'react';
-import {defineMessages, FormattedMessage, injectIntl, useIntl} from 'react-intl';
+import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import {connect} from 'react-redux';
 import MediaQuery from 'react-responsive';
 import {Tab, Tabs, TabList, TabPanel} from 'react-tabs';
@@ -47,6 +47,65 @@ import DebugModal from '../debug-modal/debug-modal.jsx';
 import {setPlatform} from '../../reducers/platform.js';
 import {setTheme} from '../../reducers/settings.js';
 import {PLATFORM} from '../../lib/platform.js';
+import {ModalFocusProvider} from '../../contexts/modal-focus-context.jsx';
+
+const ariaMessages = defineMessages({
+    menuBar: {
+        id: 'gui.aria.menuBar',
+        defaultMessage: 'Menu topbar',
+        description: 'ARIA label for the top menu bar'
+    },
+    editor: {
+        id: 'gui.aria.editor',
+        defaultMessage: 'Editor',
+        description: 'ARIA label for the main editor area'
+    },
+    tabList: {
+        id: 'gui.aria.tabList',
+        defaultMessage: 'Tab list',
+        description: 'ARIA label for the editor tab list'
+    },
+    codePanel: {
+        id: 'gui.aria.codePanel',
+        defaultMessage: 'Code editor panel',
+        description: 'ARIA label for the code editor panel'
+    },
+    costumesPanel: {
+        id: 'gui.aria.costumesPanel',
+        defaultMessage: 'Costumes editor panel',
+        description: 'ARIA label for the costumes editor panel'
+    },
+    backdropsPanel: {
+        id: 'gui.aria.backdropsPanel',
+        defaultMessage: 'Backdrops editor panel',
+        description: 'ARIA label for the backdrops editor panel'
+    },
+    soundsPanel: {
+        id: 'gui.aria.soundsPanel',
+        defaultMessage: 'Sounds editor panel',
+        description: 'ARIA label for the sounds editor panel'
+    },
+    backpack: {
+        id: 'gui.aria.backpack',
+        defaultMessage: 'Backpack',
+        description: 'ARIA label for the backpack'
+    },
+    stageAndTarget: {
+        id: 'gui.aria.stageAndTarget',
+        defaultMessage: 'Stage and target',
+        description: 'ARIA label for stage and target area'
+    },
+    stage: {
+        id: 'gui.aria.stage',
+        defaultMessage: 'Stage',
+        description: 'ARIA label for the stage'
+    },
+    targetPane: {
+        id: 'gui.aria.targetPane',
+        defaultMessage: 'Target pane',
+        description: 'ARIA label for the target pane'
+    }
+});
 
 import SaveManager from '../save-manager/save-manager.jsx';
 import { UserContext } from '../../contexts/UserContext';
@@ -78,6 +137,7 @@ const GUIComponent = props => {
         authorAvatarBadge,
         basePath = './',
         backdropLibraryVisible,
+        backpackConfigured,
         backpackHost = '',
         backpackVisible = true,
         blocksId = 'original',
@@ -114,12 +174,15 @@ const GUIComponent = props => {
         loading = false,
         logo,
         manuallySaveThumbnails,
+        onSetManualThumbnail,
+        onSetManualThumbnailButtonClick,
         menuBarHidden = false,
         renderLogin,
         onClickAbout,
         onClickAccountNav,
         onCloseAccountNav,
         onLogOut,
+        onClickLogin,
         onOpenRegistration,
         onToggleLoginOpen,
         onActivateCostumesTab,
@@ -218,11 +281,6 @@ const GUIComponent = props => {
                 isRendererSupported={isRendererSupported}
                 isRtl={isRtl}
                 loading={loading}
-                manuallySaveThumbnails={
-                    manuallySaveThumbnails &&
-                    userOwnsProject
-                }
-                onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                 stageSize={STAGE_SIZE_MODES.large}
                 vm={vm}
             >
@@ -231,14 +289,13 @@ const GUIComponent = props => {
                 ) : null}
             </StageWrapper>
         ) : (
+            <ModalFocusProvider>
             <Box
                 className={styles.pageWrapper}
                 dir={isRtl ? 'rtl' : 'ltr'}
                 {...componentProps}
-            >   
-                {/* Always render SaveManager component */}
+            >
                 <SaveManager />
-                {/* Wrap the entire GUI in a relative positioned container */}
                 <div className={styles.guiWrapper}>
                     {telemetryModalVisible ? (
                         <TelemetryModal
@@ -297,19 +354,19 @@ const GUIComponent = props => {
                     {!menuBarHidden && <MenuBarContextEnhancer>
                         <MenuBar
                             ariaRole="banner"
-                            ariaLabel="Menu topbar"
+                            ariaLabel={intl.formatMessage(ariaMessages.menuBar)}
                             accountNavOpen={accountNavOpen}
                             authorId={authorId}
                             authorThumbnailUrl={authorThumbnailUrl}
                             authorUsername={authorUsername}
                             authorAvatarBadge={authorAvatarBadge}
                             canChangeLanguage={canChangeLanguage}
+                            canChangeColorMode={canChangeColorMode}
                             canChangeTheme={canChangeTheme}
                             canCreateCopy={canCreateCopy}
                             canCreateNew={canCreateNew}
                             canEditTitle={canEditTitle}
                             canManageFiles={canManageFiles}
-                            canChangeColorMode={canChangeColorMode}
                             canRemix={canRemix}
                             canSave={canSave}
                             canShare={canShare}
@@ -326,6 +383,7 @@ const GUIComponent = props => {
                             onClickLogo={onClickLogo}
                             onCloseAccountNav={onCloseAccountNav}
                             onLogOut={onLogOut}
+                            onClickLogin={onClickLogin}
                             onOpenRegistration={onOpenRegistration}
                             onProjectTelemetryEvent={onProjectTelemetryEvent}
                             onSeeCommunity={onSeeCommunity}
@@ -339,17 +397,19 @@ const GUIComponent = props => {
                     </MenuBarContextEnhancer>}
 
                     <Box className={classNames(boxStyles, styles.flexWrapper)}>
-                            <Box 
-                                role="main"
-                                aria-label="Editor"
-                                className={styles.editorWrapper}>
-                                <Tabs
-                                    forceRenderTabPanel
-                                    className={tabClassNames.tabs}
-                                    selectedIndex={activeTabIndex}
-                                    selectedTabClassName={tabClassNames.tabSelected}
-                                    selectedTabPanelClassName={tabClassNames.tabPanelSelected}
-                                    onSelect={onActivateTab}
+                        <Box
+                            role="main"
+                            aria-label={intl.formatMessage(ariaMessages.editor)}
+                            className={styles.editorWrapper}
+                            element="main"
+                        >
+                            <Tabs
+                                forceRenderTabPanel
+                                className={tabClassNames.tabs}
+                                selectedIndex={activeTabIndex}
+                                selectedTabClassName={tabClassNames.tabSelected}
+                                selectedTabPanelClassName={tabClassNames.tabPanelSelected}
+                                onSelect={onActivateTab}
 
                                 // TODO: focusTabOnClick should be true for accessibility, but currently conflicts
                                 // with nudge operations in the paint editor. We'll likely need to manage focus
@@ -364,63 +424,79 @@ const GUIComponent = props => {
                             >
                                 <Box
                                     role="region"
-                                    aria-label="Tab List"
+                                    aria-label={intl.formatMessage(ariaMessages.tabList)}
                                 >
-                                <TabList className={tabClassNames.tabList}>
-                                    <Tab className={tabClassNames.tab}>
-                                        <img
-                                            draggable={false}
-                                            src={codeIcon}
-                                        />
-                                        <FormattedMessage
-                                            defaultMessage="Code"
-                                            description="Button to get to the code panel"
-                                            id="gui.gui.codeTab"
-                                        />
-                                    </Tab>
-                                    <Tab
-                                        className={tabClassNames.tab}
-                                        onClick={onActivateCostumesTab}
+                                    <TabList
+                                        className={tabClassNames.tabList}
+                                        role="tablist"
                                     >
-                                        <img
-                                            draggable={false}
-                                            src={costumesIcon}
-                                        />
-                                        {targetIsStage ? (
-                                            <FormattedMessage
-                                                defaultMessage="Backdrops"
-                                                description="Button to get to the backdrops panel"
-                                                id="gui.gui.backdropsTab"
+                                        <Tab
+                                            className={tabClassNames.tab}
+                                            tabIndex="0"
+                                            role="tab"
+                                        >
+                                            <img
+                                                draggable={false}
+                                                src={codeIcon}
                                             />
-                                        ) : (
                                             <FormattedMessage
-                                                defaultMessage="Costumes"
-                                                description="Button to get to the costumes panel"
-                                                id="gui.gui.costumesTab"
+                                                defaultMessage="Code"
+                                                description="Button to get to the code panel"
+                                                id="gui.gui.codeTab"
                                             />
-                                        )}
-                                    </Tab>
-                                    <Tab
-                                        className={tabClassNames.tab}
-                                        onClick={onActivateSoundsTab}
-                                    >
-                                        <img
-                                            draggable={false}
-                                            src={soundsIcon}
-                                        />
-                                        <FormattedMessage
-                                            defaultMessage="Sounds"
-                                            description="Button to get to the sounds panel"
-                                            id="gui.gui.soundsTab"
-                                        />
-                                    </Tab>
-                                </TabList>
+                                        </Tab>
+                                        <Tab
+                                            className={tabClassNames.tab}
+                                            onClick={onActivateCostumesTab}
+                                            role="tab"
+                                            tabIndex="0"
+                                        >
+                                            <img
+                                                draggable={false}
+                                                src={costumesIcon}
+                                            />
+                                            {targetIsStage ? (
+                                                <FormattedMessage
+                                                    defaultMessage="Backdrops"
+                                                    description="Button to get to the backdrops panel"
+                                                    id="gui.gui.backdropsTab"
+                                                />
+                                            ) : (
+                                                <FormattedMessage
+                                                    defaultMessage="Costumes"
+                                                    description="Button to get to the costumes panel"
+                                                    id="gui.gui.costumesTab"
+                                                />
+                                            )}
+                                        </Tab>
+                                        <Tab
+                                            className={tabClassNames.tab}
+                                            onClick={onActivateSoundsTab}
+                                            role="tab"
+                                            tabIndex="0"
+                                        >
+                                            <img
+                                                draggable={false}
+                                                src={soundsIcon}
+                                            />
+                                            <FormattedMessage
+                                                defaultMessage="Sounds"
+                                                description="Button to get to the sounds panel"
+                                                id="gui.gui.soundsTab"
+                                            />
+                                        </Tab>
+                                    </TabList>
                                 </Box>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    <Box 
+                                <TabPanel
+                                    className={tabClassNames.tabPanel}
+                                    role="tabpanel"
+                                >
+                                    <Box
+                                        className={styles.blocksWrapper}
                                         role="region"
-                                        aria-label="Code Editor Panel"
-                                        className={styles.blocksWrapper}>
+                                        aria-label={intl.formatMessage(ariaMessages.codePanel)}
+                                        element="section"
+                                    >
                                         <Blocks
                                             key={`${blocksId}/${colorMode}/${theme}`}
                                             canUseCloud={canUseCloud}
@@ -448,51 +524,69 @@ const GUIComponent = props => {
                                         <Watermark />
                                     </Box>
                                 </TabPanel>
-                                <TabPanel className={tabClassNames.tabPanel}>
+                                <TabPanel
+                                    className={tabClassNames.tabPanel}
+                                    role="tabpanel"
+                                >
                                     {costumesTabVisible ? <CostumeTab
-                                        ariaLabel={targetIsStage ? 'Backdrops Editor Panel' : 'Costumes Editor Panel'}
+                                        ariaLabel={targetIsStage ? intl.formatMessage(ariaMessages.backdropsPanel) :
+                                            intl.formatMessage(ariaMessages.costumesPanel)}
                                         ariaRole="region"
                                         vm={vm}
                                         onNewLibraryBackdropClick={onNewLibraryBackdropClick}
                                         onNewLibraryCostumeClick={onNewLibraryCostumeClick}
                                     /> : null}
                                 </TabPanel>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    {soundsTabVisible ? 
-                                        <SoundTab 
-                                            ariaLabel="Sounds Editor Panel"
+                                <TabPanel
+                                    className={tabClassNames.tabPanel}
+                                    role="tabpanel"
+                                >
+                                    {soundsTabVisible ?
+                                        <SoundTab
+                                            ariaLabel={intl.formatMessage(ariaMessages.soundsPanel)}
                                             ariaRole="region"
-                                            vm={vm} 
+                                            vm={vm}
                                         /> : null}
                                 </TabPanel>
                             </Tabs>
-                            {backpackVisible ? (
-                                <Backpack 
+                            {backpackVisible && backpackConfigured ? (
+                                <Backpack
                                     host={backpackHost}
                                     ariaRole="region"
-                                    ariaLabel="Backpack"
+                                    ariaLabel={intl.formatMessage(ariaMessages.backpack)}
                                 />
                             ) : null}
                         </Box>
 
                         <Box
                             role="complementary"
-                            aria-label="Stage and Target"
+                            aria-label={intl.formatMessage(ariaMessages.stageAndTarget)}
                             className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
+                            element="aside"
                         >
                             <StageWrapper
                                 isFullScreen={isFullScreen}
                                 isRendererSupported={isRendererSupported}
                                 isRtl={isRtl}
+                                isCreating={isCreating}
                                 stageSize={stageSize}
                                 vm={vm}
                                 ariaRole="region"
-                                ariaLabel="Stage"
+                                ariaLabel={intl.formatMessage(ariaMessages.stage)}
+                                manuallySaveThumbnails={manuallySaveThumbnails}
+                                onSetManualThumbnail={onSetManualThumbnail}
+                                onSetManualThumbnailButtonClick={onSetManualThumbnailButtonClick}
+                                loading={loading}
+                                showNewFeatureCallouts={showNewFeatureCallouts}
+                                userOwnsProject={userOwnsProject}
+                                username={username}
+                                onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                             />
-                            <Box 
+                            <Box
                                 className={styles.targetWrapper}
                                 role="region"
-                                aria-label="Target Pane"
+                                aria-label={intl.formatMessage(ariaMessages.targetPane)}
+                                element="section"
                             >
                                 <TargetPane
                                     stageSize={stageSize}
@@ -503,8 +597,7 @@ const GUIComponent = props => {
                             </Box>
                         </Box>
                     </Box>
-                <DragLayer />
-                {/* Login screen overlay - only show when not logged in and not in player mode */}
+                    <DragLayer />
                     {!isLoggedIn && !isPlayerOnly && (
                         <div className={styles.loginOverlay}>
                             <LoginScreen />
@@ -512,7 +605,8 @@ const GUIComponent = props => {
                     )}
                 </div>
             </Box>
-        );cd 
+            </ModalFocusProvider>
+        );
     }}</MediaQuery>);
 };
 
@@ -525,6 +619,7 @@ GUIComponent.propTypes = {
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
     authorAvatarBadge: PropTypes.number,
     backdropLibraryVisible: PropTypes.bool,
+    backpackConfigured: PropTypes.bool,
     backpackHost: PropTypes.string,
     backpackVisible: PropTypes.bool,
     basePath: PropTypes.string,
@@ -560,6 +655,8 @@ GUIComponent.propTypes = {
     loading: PropTypes.bool,
     logo: PropTypes.string,
     manuallySaveThumbnails: PropTypes.bool,
+    onSetManualThumbnail: PropTypes.func,
+    onSetManualThumbnailButtonClick: PropTypes.func,
     menuBarHidden: PropTypes.bool,
     onActivateCostumesTab: PropTypes.func,
     onActivateSoundsTab: PropTypes.func,
@@ -571,6 +668,7 @@ GUIComponent.propTypes = {
     onLogOut: PropTypes.func,
     onNewSpriteClick: PropTypes.func,
     onNewLibraryCostumeClick: PropTypes.func,
+    onClickLogin: PropTypes.func,
     onOpenRegistration: PropTypes.func,
     onRequestCloseBackdropLibrary: PropTypes.func,
     onRequestCloseCostumeLibrary: PropTypes.func,
@@ -611,7 +709,8 @@ const mapStateToProps = state => ({
     blocksId: state.scratchGui.timeTravel.year.toString(),
     stageSizeMode: state.scratchGui.stageSize.stageSize,
     colorMode: state.scratchGui.settings.colorMode,
-    theme: state.scratchGui.settings.theme
+    theme: state.scratchGui.settings.theme,
+    backpackConfigured: !!state.scratchGui.config.storage?.backpackStorage
 });
 
 const mapDispatchToProps = dispatch => ({

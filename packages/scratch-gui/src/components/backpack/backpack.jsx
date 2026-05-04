@@ -79,7 +79,7 @@ const Backpack = ({
     };
 
     return (
-        <div
+        <section
             className={styles.backpackContainer}
             role={ariaRole}
             aria-label={ariaLabel}
@@ -100,8 +100,8 @@ const Backpack = ({
                         [styles.dragOver]: dragOver || blockDragOver
                     })}
                     ref={containerRef}
-                    onMouseEnter={onMouseEnter}
-                    onMouseLeave={onMouseLeave}
+                    onPointerEnter={onMouseEnter}
+                    onPointerLeave={onMouseLeave}
                 >
                     {error ? (
                         <div className={styles.statusMessage}>
@@ -122,35 +122,38 @@ const Backpack = ({
                             </div>
                         ) : (
                             contents.length > 0 ? (
-                                <div className={styles.backpackListInner}>
+                                <ul className={styles.backpackListInner}>
                                     {contents.map(item => (
-                                        <SpriteSelectorItem
-                                            className={styles.backpackItem}
-                                            costumeURL={item.thumbnailUrl}
-                                            details={item.name}
-                                            dragPayload={item}
-                                            dragType={dragTypeMap[item.type]}
-                                            id={item.id}
-                                            key={item.id}
-                                            name={intl.formatMessage(labelMap[item.type])}
-                                            selected={false}
-                                            onClick={noop}
-                                            onDeleteButtonClick={onDelete}
-                                        />
+                                        <li key={item.id}>
+                                            <SpriteSelectorItem
+                                                className={styles.backpackItem}
+                                                costumeURL={item.thumbnailUrl}
+                                                details={item.name}
+                                                dragPayload={item}
+                                                dragType={dragTypeMap[item.type]}
+                                                id={item.id}
+                                                name={intl.formatMessage(labelMap[item.type])}
+                                                selected={false}
+                                                onClick={noop}
+                                                onDeleteButtonClick={onDelete}
+                                            />
+                                        </li>
                                     ))}
                                     {showMore && (
-                                        <button
-                                            className={styles.more}
-                                            onClick={onMore}
-                                        >
-                                            <FormattedMessage
-                                                defaultMessage="More"
-                                                description="Load more from backpack"
-                                                id="gui.backpack.more"
-                                            />
-                                        </button>
+                                        <li>
+                                            <button
+                                                className={styles.more}
+                                                onClick={onMore}
+                                            >
+                                                <FormattedMessage
+                                                    defaultMessage="More"
+                                                    description="Load more from backpack"
+                                                    id="gui.backpack.more"
+                                                />
+                                            </button>
+                                        </li>
                                     )}
-                                </div>
+                                </ul>
                             ) : (
                                 <div className={styles.statusMessage}>
                                     <FormattedMessage
@@ -164,7 +167,7 @@ const Backpack = ({
                     )}
                 </div>
             ) : null}
-        </div>
+        </section>
     );
 };
 
@@ -185,8 +188,8 @@ Backpack.propTypes = {
     loading: PropTypes.bool,
     onDelete: PropTypes.func,
     onMore: PropTypes.func,
-    onMouseEnter: PropTypes.func,
-    onMouseLeave: PropTypes.func,
+    onPointerEnter: PropTypes.func,
+    onPointerLeave: PropTypes.func,
     onToggle: PropTypes.func,
     showMore: PropTypes.bool
 };

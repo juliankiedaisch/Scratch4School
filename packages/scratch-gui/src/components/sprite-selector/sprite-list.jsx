@@ -44,6 +44,7 @@ const SpriteList = function (props) {
         >
             <Box
                 className={styles.itemsWrapper}
+                element="ul"
             >
                 {items.map((sprite, index) => {
 

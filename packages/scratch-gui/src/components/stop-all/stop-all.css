@@ -9,6 +9,13 @@
     cursor: pointer;
 }
 
+.stop-all-button {
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 0;
+}
+
 .stop-all:hover {
     background-color: $looks-light-transparent;
 }

@@ -288,19 +288,10 @@ const MyProjectsTab = ({
                                 </div>
                             </div>
                             
-                            {/* Project Actions - Only project owners can delete */}
+                            {/* Project Actions - Only project owners can submit/withdraw assignments */}
                             {selectedProject.access_via === 'owner' && (
                                 <div className={styles.projectActionsColumn}>
                                     <div className={styles.projectActions}>
-                                        <button
-                                            className={styles.deleteProjectButton}
-                                            onClick={onDeleteProject}
-                                            disabled={selectedProject.is_frozen}
-                                            title={selectedProject.is_frozen ? 'Cannot delete frozen project' : ''}
-                                        >
-                                            🗑️ <FormattedMessage {...messages.deleteProject} />
-                                        </button>
-                                        
                                         {/* Show Submit or Withdraw button based on submission status */}
                                         {selectedProject.assignment_submissions && selectedProject.assignment_submissions.length > 0 ? (
                                             <button
@@ -662,6 +653,27 @@ const MyProjectsTab = ({
                                 })}
                             </div>
                         </div>
+
+                        {/* Delete Section - at the end to avoid accidental clicks */}
+                        {selectedProject.access_via === 'owner' && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionHeader}>
+                                    <div className={styles.sectionTitle}>
+                                        <FormattedMessage {...messages.deleteProject} />
+                                    </div>
+                                </div>
+                                <div className={styles.projectActions}>
+                                    <button
+                                        className={styles.deleteProjectButton}
+                                        onClick={onDeleteProject}
+                                        disabled={selectedProject.is_frozen}
+                                        title={selectedProject.is_frozen ? 'Cannot delete frozen project' : ''}
+                                    >
+                                        🗑️ <FormattedMessage {...messages.deleteProject} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

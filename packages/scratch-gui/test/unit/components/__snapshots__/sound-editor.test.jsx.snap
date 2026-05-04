@@ -35,9 +35,8 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       </div>
     </div>
     <div>
-      <div
+      <button
         class=""
-        role="button"
       >
         <img
           draggable="false"
@@ -46,10 +45,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
         <div>
           Copy
         </div>
-      </div>
-      <div
+      </button>
+      <button
         class=""
-        role="button"
       >
         <img
           draggable="false"
@@ -58,10 +56,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
         <div>
           Paste
         </div>
-      </div>
-      <div
+      </button>
+      <button
         class=""
-        role="button"
       >
         <img
           draggable="false"
@@ -70,11 +67,10 @@ exports[`Sound Editor Component matches snapshot 1`] = `
         <div>
           Copy to New
         </div>
-      </div>
+      </button>
     </div>
-    <div
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -83,7 +79,7 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Delete
       </div>
-    </div>
+    </button>
   </div>
   <div>
     <div>
@@ -174,9 +170,8 @@ exports[`Sound Editor Component matches snapshot 1`] = `
         />
       </button>
     </div>
-    <div
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -185,10 +180,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Faster
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -197,10 +191,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Slower
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -209,10 +202,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Louder
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -221,10 +213,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Softer
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -233,10 +224,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Mute
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -245,10 +235,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Fade in
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -257,10 +246,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Fade out
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -269,10 +257,9 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Reverse
       </div>
-    </div>
-    <div
+    </button>
+    <button
       class=""
-      role="button"
     >
       <img
         draggable="false"
@@ -281,7 +268,7 @@ exports[`Sound Editor Component matches snapshot 1`] = `
       <div>
         Robot
       </div>
-    </div>
+    </button>
   </div>
 </div>
 `;

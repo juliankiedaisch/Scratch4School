@@ -1,9 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`IconButtonComponent renders with all props correctly 1`] = `
-<div
+<button
   class="custom-class-name"
-  role="button"
 >
   <img
     draggable="false"
@@ -14,5 +13,5 @@ exports[`IconButtonComponent renders with all props correctly 1`] = `
       Text
     </div>
   </div>
-</div>
+</button>
 `;

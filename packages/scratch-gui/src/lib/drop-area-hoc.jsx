@@ -47,7 +47,7 @@ const DropAreaHOC = function (dragTypes) {
                 this.containerBox = null;
             }
 
-            componentWillReceiveProps (newProps) {
+            UNSAFE_componentWillReceiveProps (newProps) {
                 // If `dragging` becomes true, record the drop area rectangle
                 if (newProps.dragInfo.dragging && !this.props.dragInfo.dragging) {
                     this.dropAreaRect = this.ref && this.ref.getBoundingClientRect();

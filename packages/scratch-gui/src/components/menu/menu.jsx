@@ -34,7 +34,7 @@ MenuComponent.propTypes = {
 
 
 const Submenu = ({children, className, place, ...props}) => (
-    <div
+    <ul
         className={classNames(
             styles.submenu,
             className,
@@ -50,7 +50,7 @@ const Submenu = ({children, className, place, ...props}) => (
         >
             {children}
         </MenuComponent>
-    </div>
+    </ul>
 );
 
 Submenu.propTypes = {

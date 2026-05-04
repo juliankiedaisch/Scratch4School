@@ -161,24 +161,30 @@ def api_status():
 @api_bp.route('/groups', methods=['GET'])
 @require_auth
 def get_user_groups(user_info):
-    """Get all groups that the authenticated user is a member of"""
+    """Get groups accessible to the authenticated user.
+    Admins and teachers receive all groups; other users receive only their own groups."""
     try:
         user = User.query.get(user_info['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 404
-            
-        # Get the groups the user belongs to
-        groups = []
-        for group in user.groups:
-            groups.append({
+
+        if user.role in ('admin', 'teacher'):
+            source_groups = Group.query.order_by(Group.name).all()
+        else:
+            source_groups = user.groups
+
+        groups = [
+            {
                 'id': group.id,
                 'name': group.name,
                 'external_id': group.external_id,
                 'description': group.description
-            })
-            
+            }
+            for group in source_groups
+        ]
+
         return jsonify({'groups': groups}), 200
-        
+
     except Exception as e:
         current_app.logger.error(f"Error retrieving user groups: {str(e)}")
         return jsonify({'error': str(e)}), 500

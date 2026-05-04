@@ -2,18 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
 import BackpackComponent from '../components/backpack/backpack.jsx';
-import {
-    getBackpackContents,
-    saveBackpackObject,
-    deleteBackpackObject,
-    soundPayload,
-    costumePayload,
-    spritePayload,
-    codePayload
-} from '../lib/backpack-api';
+import soundPayload from '../lib/backpack/sound-payload';
+import costumePayload from '../lib/backpack/costume-payload';
+import spritePayload from '../lib/backpack/sprite-payload';
+import codePayload from '../lib/backpack/code-payload';
+import {PayloadSerializableData} from '../lib/backpack/payload-serializable-data.ts';
 import DragConstants from '../lib/drag-constants';
 import DropAreaHOC from '../lib/drop-area-hoc.jsx';
 import {GUIStoragePropType} from '../gui-config';
+import {getBackpackContents, deleteBackpackObject, saveBackpackObject} from '../lib/backpack-api.js';
 
 import {connect} from 'react-redux';
 import VM from '@scratch/scratch-vm';
@@ -31,8 +28,8 @@ class Backpack extends React.Component {
             'handleToggle',
             'handleDelete',
             'getContents',
-            'handleMouseEnter',
-            'handleMouseLeave',
+            'handlePointerEnter',
+            'handlePointerLeave',
             'handleBlockDragEnd',
             'handleBlockDragUpdate',
             'handleTouchEnd',
@@ -57,12 +54,20 @@ class Backpack extends React.Component {
         if (props.host) {
             props.storage.setBackpackHost?.(props.host);
         }
+        // Set initial session
+        this.updateBackpackSession(props);
     }
     componentDidMount () {
         this.props.vm.addListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
         this.props.vm.addListener('BLOCK_DRAG_UPDATE', this.handleBlockDragUpdate);
         document.addEventListener('touchend', this.handleTouchEnd);
         document.addEventListener('touchmove', this.handleTouchMove, {passive: false});
+    }
+    componentDidUpdate (prevProps) {
+        // Update session when credentials change
+        if (prevProps.username !== this.props.username || prevProps.token !== this.props.token) {
+            this.updateBackpackSession(this.props);
+        }
     }
     componentWillUnmount () {
         this.props.vm.removeListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
@@ -81,15 +86,23 @@ class Backpack extends React.Component {
         const {top, left, bottom, right} = this.ref.getBoundingClientRect();
         if (x >= left && x <= right && y >= top && y <= bottom) {
             if (!this.state.blockDragOverBackpack) {
-                this.handleMouseEnter();
+                this.handlePointerEnter();
             }
         } else {
             if (this.state.blockDragOverBackpack) {
-                this.handleMouseLeave();
+                this.handlePointerLeave();
             }
         }
     }
 
+    updateBackpackSession (props) {
+        const {username, token} = props;
+        if (username && token) {
+            props.storage.backpackStorage?.setSession?.({username, token});
+        } else {
+            props.storage.backpackStorage?.setSession?.(null);
+        }
+    }
     handleToggle () {
         const newState = !this.state.expanded;
         this.setState({expanded: newState, contents: []}, () => {
@@ -102,6 +115,7 @@ class Backpack extends React.Component {
     }
     handleDrop (dragInfo) {
         const scratchStorage = this.props.storage.scratchStorage;
+        const backpackStorage = this.props.storage.backpackStorage;
 
         let payloader = null;
         let presaveAsset = null;
@@ -125,6 +139,11 @@ class Backpack extends React.Component {
 
         // Creating the payload is async, so set loading before starting
         this.setState({loading: true}, () => {
+            // If there's a failure before the backpack state changes, then we don't need to set the backpack into an
+            // error state. The operation failed, but the backpack is still potentially usable and consistent. If the
+            // backpack state might have changed on the server OR client by the time of the failure, then we should
+            // set the backpack into an error state.
+            let backpackMightHaveChanged = false;
             payloader(dragInfo.payload, this.props.vm)
                 .then(payload => saveBackpackObject({
                     host: this.props.host,
@@ -139,7 +158,7 @@ class Backpack extends React.Component {
                     });
                 })
                 .catch(error => {
-                    this.setState({error: true, loading: false});
+                    this.setState({error: backpackMightHaveChanged, loading: false});
                     throw error;
                 });
         });
@@ -192,14 +211,14 @@ class Backpack extends React.Component {
             blockDragOutsideWorkspace: isOutsideWorkspace
         });
     }
-    handleMouseEnter () {
+    handlePointerEnter () {
         if (this.state.blockDragOutsideWorkspace) {
             this.setState({
                 blockDragOverBackpack: true
             });
         }
     }
-    handleMouseLeave () {
+    handlePointerLeave () {
         this.setState({
             blockDragOverBackpack: false
         });
@@ -238,8 +257,8 @@ class Backpack extends React.Component {
                 onDelete={this.handleDelete}
                 onDrop={this.handleDrop}
                 onMore={this.handleMore}
-                onMouseEnter={this.handleMouseEnter}
-                onMouseLeave={this.handleMouseLeave}
+                onPointerEnter={this.handlePointerEnter}
+                onPointerLeave={this.handlePointerLeave}
                 onToggle={this.handleToggle}
                 ariaRole={this.props.ariaRole}
                 ariaLabel={this.props.ariaLabel}

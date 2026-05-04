@@ -27,7 +27,7 @@ describe('IconButtonComponent', () => {
             />
         );
 
-        const button = container.querySelector('div[role="button"]');
+        const button = container.querySelector('button');
 
         fireEvent.click(button);
 

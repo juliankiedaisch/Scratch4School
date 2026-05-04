@@ -9,6 +9,9 @@
     user-select: none;
     cursor: pointer;
     transition: all 0.15s ease-out;
+    border: none;
+    background: none;
+    padding: 0;
 }
 
 .delete-button-visible {

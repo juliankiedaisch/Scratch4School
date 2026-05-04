@@ -14,20 +14,24 @@ const StopAllComponent = function (props) {
         ...componentProps
     } = props;
     return (
-        <img
-            className={classNames(
-                className,
-                styles.stopAll,
-                {
-                    [styles.isActive]: active
-                }
-            )}
-            draggable={false}
-            src={stopAllIcon}
-            title={title}
+        <button
+            className={styles.stopAllButton}
             onClick={onClick}
             {...componentProps}
-        />
+        >
+            <img
+                className={classNames(
+                    className,
+                    styles.stopAll,
+                    {
+                        [styles.isActive]: active
+                    }
+                )}
+                draggable={false}
+                src={stopAllIcon}
+                title={title}
+            />
+        </button>
     );
 };
 
