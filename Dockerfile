@@ -1,5 +1,5 @@
 # Dockerfile
-FROM node:20-alpine
+FROM node:22-alpine
 
 
 # Arbeitsverzeichnis im Container
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY packages ./packages
 COPY scripts ./scripts
 COPY package.json .
-COPY package-lock.json .
+#COPY package-lock.json .
 
 RUN npm install
 RUN npm run build
